@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, Loader2, ShieldCheck } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,7 +78,7 @@ export default function AdminLoginPage() {
                 id="email"
                 type="email"
                 autoComplete="email"
-                placeholder="admin@dailywish.pk"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -115,15 +115,6 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <div className="mt-5 flex items-start gap-2 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div>
-              <p className="font-semibold text-foreground">Demo admin</p>
-              <p>
-                admin@dailywish.pk / <span className="font-mono">Admin@12345</span>
-              </p>
-            </div>
-          </div>
         </div>
 
         <p className="mt-6 text-center text-sm text-slate-400">

@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Card,
@@ -158,17 +158,6 @@ function LoginForm() {
             )}
           </Button>
         </form>
-
-        <div className="mt-5 flex items-start gap-2 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <div>
-            <p className="font-semibold text-foreground">Demo customer</p>
-            <p>
-              customer@dailywish.pk /{' '}
-              <span className="font-mono">Customer@123</span>
-            </p>
-          </div>
-        </div>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           New to DailyWish?{' '}
