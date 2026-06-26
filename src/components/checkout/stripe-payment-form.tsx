@@ -119,7 +119,7 @@ export function StripePaymentForm({ clientSecret, orderNumber, amount, onBack }:
       stripe={stripe}
       options={{
         clientSecret,
-        appearance: { theme: 'stripe', variables: { colorPrimary: '#2563eb' } },
+        appearance: { theme: 'stripe', variables: { colorPrimary: '#b56e1f' } },
       }}
     >
       <PaymentInner orderNumber={orderNumber} amount={amount} onBack={onBack} />

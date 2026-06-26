@@ -13,11 +13,11 @@ export default async function AuthLayout({
   if (user) redirect('/');
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 via-white to-amber-50 px-4 py-10">
-      {/* Decorative blobs */}
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background bg-radiance px-4 py-10">
+      {/* Decorative golden blobs */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-accent/12 blur-3xl" />
+        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-blush-200/30 blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">

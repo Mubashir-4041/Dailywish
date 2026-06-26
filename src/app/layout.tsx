@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Playfair_Display } from 'next/font/google';
+import { Inter, Fraunces } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { Providers } from '@/components/providers';
@@ -11,10 +11,14 @@ const inter = Inter({
   display: 'swap',
 });
 
-const playfair = Playfair_Display({
+// Fraunces — a soft, optical-serif display face with genuine character.
+// Carries the brand personality; used with restraint on headings only.
+const fraunces = Fraunces({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
 });
 
 export const metadata: Metadata = defaultMetadata;
@@ -33,7 +37,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${playfair.variable} font-sans`}>
+      <body className={`${inter.variable} ${fraunces.variable} font-sans`}>
         <Providers>{children}</Providers>
         <Script
           id="org-jsonld"

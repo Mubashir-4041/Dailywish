@@ -46,7 +46,7 @@ function VerifyEmailContent() {
   return (
     <Card className="border-border/60 shadow-xl">
       <CardHeader className="items-center text-center">
-        <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-primary">
+        <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary">
           <MailQuestion className="h-6 w-6" />
         </div>
         <CardTitle className="font-display text-2xl">Verify your email</CardTitle>

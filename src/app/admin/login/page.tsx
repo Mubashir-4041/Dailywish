@@ -54,11 +54,11 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 p-4">
-      {/* Decorative background */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-stone-950 p-4">
+      {/* Decorative golden glow */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-primary/30 blur-3xl" />
-        <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
+        <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-accent/25 blur-3xl" />
+        <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-blush-300/15 blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -67,7 +67,7 @@ export default function AdminLoginPage() {
             <Sparkles className="h-6 w-6" />
           </div>
           <h1 className="font-display text-2xl font-bold text-white">DailyWish Admin</h1>
-          <p className="mt-1 text-sm text-slate-400">Sign in to manage your store</p>
+          <p className="mt-1 text-sm text-stone-400">Sign in to manage your store</p>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-2xl sm:p-8">
@@ -117,8 +117,8 @@ export default function AdminLoginPage() {
 
         </div>
 
-        <p className="mt-6 text-center text-sm text-slate-400">
-          <Link href="/" className="font-medium text-slate-300 underline-offset-4 hover:underline">
+        <p className="mt-6 text-center text-sm text-stone-400">
+          <Link href="/" className="font-medium text-stone-300 underline-offset-4 hover:underline">
             ← Back to store
           </Link>
         </p>

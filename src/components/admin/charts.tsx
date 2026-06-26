@@ -41,8 +41,8 @@ export function RevenueChart({ data }: { data: RevenuePoint[] }) {
       <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
         <defs>
           <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1b61d7" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="#1b61d7" stopOpacity={0} />
+            <stop offset="0%" stopColor="#d18a26" stopOpacity={0.32} />
+            <stop offset="100%" stopColor="#d18a26" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -71,7 +71,7 @@ export function RevenueChart({ data }: { data: RevenuePoint[] }) {
         <Area
           type="monotone"
           dataKey="revenue"
-          stroke="#1b61d7"
+          stroke="#b56e1f"
           strokeWidth={2.5}
           fill="url(#revFill)"
         />
@@ -111,7 +111,7 @@ export function OrdersByStatusChart({ data }: { data: StatusPoint[] }) {
         />
         <Bar dataKey="count" radius={[6, 6, 0, 0]}>
           {data.map((entry) => (
-            <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? '#1b61d7'} />
+            <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? '#b56e1f'} />
           ))}
         </Bar>
       </BarChart>

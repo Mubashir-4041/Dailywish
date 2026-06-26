@@ -27,7 +27,7 @@ export function Hero({
   const slide = slides[active]!;
 
   return (
-    <section className="relative isolate overflow-hidden bg-gradient-to-br from-brand-50 via-background to-amber-50/40">
+    <section className="relative isolate overflow-hidden bg-background">
       <HeroBackground />
 
       <div className="container relative z-10 grid items-stretch gap-10 py-14 lg:grid-cols-2 lg:gap-16 lg:py-24">
@@ -119,8 +119,8 @@ function HeroShowcase({
 
   return (
     <div className="relative flex min-h-[24rem] items-center justify-center lg:min-h-[34rem]">
-      {/* Soft glow behind the card */}
-      <div className="absolute h-[80%] w-[80%] rounded-full bg-gradient-to-tr from-primary/25 via-pink-300/20 to-accent/25 blur-3xl" />
+      {/* Soft golden glow behind the card */}
+      <div className="absolute h-[80%] w-[80%] rounded-full bg-gradient-to-tr from-accent/35 via-amber-200/30 to-blush-200/40 blur-3xl" />
 
       {/* Main product card */}
       <motion.div
@@ -215,6 +215,8 @@ function HeroBackground() {
       aria-hidden
       className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
     >
+      {/* Signature golden radiance */}
+      <div className="absolute inset-0 bg-radiance" />
       {/* Subtle dot-grid texture */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,hsl(var(--foreground)/0.04)_1px,transparent_0)] [background-size:24px_24px]" />
 

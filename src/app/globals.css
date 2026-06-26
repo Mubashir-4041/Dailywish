@@ -3,49 +3,52 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── "Radiance" palette ───────────────────────────────────────────────
+     Porcelain background, espresso ink, honey-gold accent, blush tints.
+     A warm, luminous identity for a Vitamin-C skincare brand. */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 214 84% 52%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 38 92% 50%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 214 84% 52%;
-    --radius: 0.75rem;
+    --background: 38 47% 97%;
+    --foreground: 24 16% 15%;
+    --card: 38 44% 99%;
+    --card-foreground: 24 16% 15%;
+    --popover: 38 44% 99%;
+    --popover-foreground: 24 16% 15%;
+    --primary: 22 28% 16%;
+    --primary-foreground: 40 40% 97%;
+    --secondary: 24 45% 92%;
+    --secondary-foreground: 22 28% 18%;
+    --muted: 32 30% 92%;
+    --muted-foreground: 26 11% 46%;
+    --accent: 37 73% 56%;
+    --accent-foreground: 24 30% 14%;
+    --destructive: 5 65% 52%;
+    --destructive-foreground: 40 40% 98%;
+    --border: 31 30% 88%;
+    --input: 31 30% 88%;
+    --ring: 37 73% 52%;
+    --radius: 0.9rem;
   }
 
   .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 214 90% 60%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 38 92% 55%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 63% 45%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 20%;
-    --input: 217 33% 22%;
-    --ring: 214 90% 60%;
+    --background: 22 16% 9%;
+    --foreground: 38 40% 95%;
+    --card: 22 14% 12%;
+    --card-foreground: 38 40% 95%;
+    --popover: 22 14% 12%;
+    --popover-foreground: 38 40% 95%;
+    --primary: 38 42% 93%;
+    --primary-foreground: 22 28% 14%;
+    --secondary: 24 14% 18%;
+    --secondary-foreground: 38 40% 95%;
+    --muted: 24 12% 18%;
+    --muted-foreground: 28 12% 64%;
+    --accent: 38 78% 58%;
+    --accent-foreground: 24 30% 12%;
+    --destructive: 5 62% 47%;
+    --destructive-foreground: 40 40% 98%;
+    --border: 24 14% 20%;
+    --input: 24 14% 22%;
+    --ring: 38 78% 56%;
   }
 }
 
@@ -59,6 +62,12 @@
   }
   html {
     scroll-behavior: smooth;
+  }
+  /* Fraunces display: tighten tracking and prefer its old-style figures so big
+     headings read as crafted, not default. */
+  .font-display {
+    letter-spacing: -0.015em;
+    font-feature-settings: 'ss01' 1, 'liga' 1;
   }
 }
 
@@ -86,5 +95,19 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+  /* Signature "glow" — the brand's literal motif. A warm golden radiance used
+     behind heroes and feature sections. */
+  .bg-radiance {
+    background-image:
+      radial-gradient(62% 55% at 50% -8%, hsl(var(--accent) / 0.22), transparent 70%),
+      radial-gradient(45% 45% at 102% 28%, hsl(342 64% 78% / 0.20), transparent 72%),
+      radial-gradient(40% 40% at -4% 70%, hsl(var(--accent) / 0.14), transparent 72%);
+  }
+  .text-gradient-gold {
+    background-image: linear-gradient(95deg, hsl(37 74% 48%), hsl(40 82% 60%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }
