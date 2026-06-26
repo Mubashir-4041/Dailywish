@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/Dailywish/**)",
+      "Bash(npm install *)",
+      "Bash(npm audit *)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(echo \"LINT EXIT: $?\")",
+      "Bash(npx jest *)",
+      "Bash(echo \"JEST EXIT: $?\")",
+      "Bash(rm -f /d/Dailywish/src/models/User.ts /d/Dailywish/src/models/Newsletter.ts /d/Dailywish/src/models/AuditLog.ts /d/Dailywish/src/models/Setting.ts /d/Dailywish/src/models/Testimonial.ts /d/Dailywish/src/models/Banner.ts /d/Dailywish/src/models/Wishlist.ts /d/Dailywish/src/models/Coupon.ts /d/Dailywish/src/models/Review.ts /d/Dailywish/src/models/Order.ts /d/Dailywish/src/models/Product.ts /d/Dailywish/src/models/Category.ts)",
+      "Read(//d/Dailywish/src/models/**)",
+      "Bash(curl -s -o /dev/null -w 'HTTP %{http_code}  %{size_download}B  %{time_total}s\\\\n' http://localhost:3000/)",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' http://localhost:3000/api/products?pageSize=2)",
+      "Bash(npx tsx *)",
+      "Bash(curl -s \"http://localhost:3000/api/products/vitamin-c-whitening-face-wash\")",
+      "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq *\")",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(pkill -f \"next-server\")",
+      "Bash(curl -s -o /dev/null -w \"server now: HTTP %{http_code}\\\\n\" --max-time 3 http://localhost:3000/)",
+      "Bash(node *)"
+    ]
+  }
+}

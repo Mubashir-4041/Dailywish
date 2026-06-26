@@ -1,0 +1,158 @@
+import type { Metadata } from 'next';
+import { siteConfig } from '@/config/site';
+import type { Product } from '@/types';
+import { formatPrice } from '@/lib/utils';
+
+const BASE = siteConfig.url;
+
+export const defaultMetadata: Metadata = {
+  metadataBase: new URL(BASE),
+  title: {
+    default: `${siteConfig.name} - Premium Skincare & Cosmetics in Pakistan`,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  applicationName: siteConfig.name,
+  keywords: [
+    'DailyWish',
+    'Majid Cosmetics',
+    'Vitamin C face wash',
+    'whitening cream',
+    'skincare Pakistan',
+    'anti-acne cream',
+    'skin polish',
+    'beauty products',
+  ],
+  authors: [{ name: siteConfig.name }],
+  creator: siteConfig.name,
+  publisher: siteConfig.legalName,
+  formatDetection: { telephone: true, address: true, email: true },
+  openGraph: {
+    type: 'website',
+    locale: siteConfig.locale,
+    url: BASE,
+    siteName: siteConfig.name,
+    title: `${siteConfig.name} - Glow Every Day`,
+    description: siteConfig.description,
+    images: [
+      {
+        url: '/banners/hero-1.jpeg',
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} skincare`,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${siteConfig.name} - Glow Every Day`,
+    description: siteConfig.description,
+    images: ['/banners/hero-1.jpeg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
+  },
+  alternates: { canonical: '/' },
+};
+
+export function buildProductMetadata(product: Product): Metadata {
+  const title = product.seo?.title ?? product.name;
+  const description =
+    product.seo?.description ?? product.shortDescription ?? siteConfig.description;
+  const image = product.images.find((i) => i.isPrimary)?.url ?? product.images[0]?.url;
+  const url = `${BASE}/product/${product.slug}`;
+  return {
+    title,
+    description,
+    keywords: product.seo?.keywords ?? product.tags,
+    alternates: { canonical: `/product/${product.slug}` },
+    openGraph: {
+      type: 'website',
+      url,
+      title,
+      description,
+      images: image ? [{ url: image, width: 1000, height: 1000, alt: product.name }] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: image ? [image] : [],
+    },
+  };
+}
+
+/** JSON-LD: Organization + LocalBusiness with both store locations. */
+export function organizationJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Store',
+    name: siteConfig.name,
+    legalName: siteConfig.legalName,
+    url: BASE,
+    email: siteConfig.email,
+    telephone: siteConfig.phoneIntl,
+    image: `${BASE}/banners/hero-1.jpeg`,
+    sameAs: Object.values(siteConfig.social),
+    location: siteConfig.locations.map((loc) => ({
+      '@type': 'LocalBusiness',
+      name: loc.name,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: loc.address,
+        addressLocality: loc.city,
+        addressRegion: loc.region,
+        addressCountry: 'PK',
+      },
+    })),
+  };
+}
+
+export function productJsonLd(product: Product) {
+  const image = product.images.map((i) => `${BASE}${i.url}`);
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image,
+    description: product.shortDescription || product.description,
+    sku: product.sku,
+    brand: { '@type': 'Brand', name: product.brand },
+    aggregateRating:
+      product.numReviews > 0
+        ? {
+            '@type': 'AggregateRating',
+            ratingValue: product.rating,
+            reviewCount: product.numReviews,
+          }
+        : undefined,
+    offers: {
+      '@type': 'Offer',
+      url: `${BASE}/product/${product.slug}`,
+      priceCurrency: siteConfig.currency,
+      price: product.price,
+      availability:
+        product.stock > 0
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+      seller: { '@type': 'Organization', name: siteConfig.name },
+    },
+  };
+}
+
+export function breadcrumbJsonLd(items: { name: string; url: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.name,
+      item: `${BASE}${item.url}`,
+    })),
+  };
+}
+
+export { formatPrice };
