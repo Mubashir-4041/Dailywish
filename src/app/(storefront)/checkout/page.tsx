@@ -45,6 +45,22 @@ export default function CheckoutPage() {
     notes: '',
   });
 
+  // Checkout requires a logged-in user (enforced by middleware) — prefill their
+  // contact details so they don't retype them.
+  React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { user?: { name?: string; email?: string } } | null) => {
+        if (!d?.user) return;
+        setForm((f) => ({
+          ...f,
+          email: f.email || d.user!.email || '',
+          fullName: f.fullName || d.user!.name || '',
+        }));
+      })
+      .catch(() => undefined);
+  }, []);
+
   const total = Math.max(0, cart.subtotal + cart.shipping);
 
   if (cart.items.length === 0 && !loading) {

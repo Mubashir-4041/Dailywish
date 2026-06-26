@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, AlertTriangle, TrendingUp } from 'lucide-react';
+import { ArrowRight, AlertTriangle, TrendingUp, Mail } from 'lucide-react';
 import { getAdminStats } from '@/app/admin/_lib/stats';
 import { StatCard } from '@/components/admin/stat-card';
 import { RevenueChart, OrdersByStatusChart } from '@/components/admin/charts';
@@ -35,7 +35,7 @@ export default async function AdminDashboardPage() {
 
       {!stats.live ? <DbNotice /> : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total Revenue"
           value={stats.totals.revenue}
@@ -190,6 +190,56 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-primary" />
+            Recent messages
+            {stats.unreadMessages > 0 ? (
+              <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+                {stats.unreadMessages} new
+              </span>
+            ) : null}
+          </CardTitle>
+          <Link
+            href="/admin/messages"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          >
+            View all <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {stats.recentMessages.length ? (
+            <ul className="divide-y">
+              {stats.recentMessages.map((m) => (
+                <li key={m._id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                  <div
+                    className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                      m.isRead ? 'bg-transparent' : 'bg-primary'
+                    }`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`truncate text-sm ${m.isRead ? 'font-medium' : 'font-semibold'}`}>
+                        {m.subject}
+                      </p>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {formatDate(m.createdAt)}
+                      </span>
+                    </div>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {m.name} — {m.message}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState title="No messages yet" description="Contact-form enquiries will appear here." />
+          )}
+        </CardContent>
+      </Card>
 
       {stats.topProducts.length ? (
         <Card>

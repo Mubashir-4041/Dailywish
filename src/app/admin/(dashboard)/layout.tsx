@@ -22,9 +22,14 @@ export default async function AdminDashboardLayout({
         <AdminSidebarNav />
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col lg:pl-64">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
         <AdminTopbar name={admin.name} email={admin.email} role={admin.role} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        {/* min-w-0 lets flex children shrink so wide tables/charts scroll inside
+            their own container instead of overflowing the page. The max-width
+            keeps the dashboard from stretching uncomfortably on large monitors. */}
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-screen-2xl">{children}</div>
+        </main>
       </div>
     </div>
   );

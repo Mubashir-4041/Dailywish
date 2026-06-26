@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, asc, count, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
-import { orders, products as productsTable, users } from '@/db/schema';
+import { orders, products as productsTable, users, contactMessages } from '@/db/schema';
 import { placedOrderCondition } from '@/server/orders';
 import { products as staticProducts } from '@/data/catalog';
 import type { OrderStatus } from '@/types';
@@ -36,6 +36,15 @@ export interface RevenuePoint {
   orders: number;
 }
 
+export interface RecentMessage {
+  _id: string;
+  name: string;
+  subject: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export interface AdminStats {
   live: boolean;
   totals: {
@@ -49,6 +58,8 @@ export interface AdminStats {
   recentOrders: RecentOrder[];
   lowStock: LowStockProduct[];
   topProducts: TopProduct[];
+  recentMessages: RecentMessage[];
+  unreadMessages: number;
 }
 
 const LOW_STOCK_THRESHOLD = 25;
@@ -121,6 +132,8 @@ function fallbackStats(): AdminStats {
     recentOrders: [],
     lowStock,
     topProducts: top,
+    recentMessages: [],
+    unreadMessages: 0,
   };
 }
 
@@ -146,6 +159,8 @@ export async function getAdminStats(): Promise<AdminStats> {
       recentDocs,
       lowStockDocs,
       topDocs,
+      messageDocs,
+      unreadMessageRows,
     ] = await Promise.all([
       db
         .select({ total: sql<number>`coalesce(sum(${orders.total}), 0)::float8` })
@@ -176,6 +191,11 @@ export async function getAdminStats(): Promise<AdminStats> {
         .orderBy(asc(productsTable.stock))
         .limit(6),
       db.select().from(productsTable).orderBy(desc(productsTable.sold)).limit(5),
+      db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt)).limit(5),
+      db
+        .select({ value: count() })
+        .from(contactMessages)
+        .where(eq(contactMessages.isRead, false)),
     ]);
 
     const monthlyMap = new Map(monthlyAgg.map((m) => [m.ym, m]));
@@ -223,6 +243,15 @@ export async function getAdminStats(): Promise<AdminStats> {
         price: d.price,
         image: d.images?.[0]?.url ?? '',
       })),
+      recentMessages: messageDocs.map((m) => ({
+        _id: String(m.id),
+        name: m.name,
+        subject: m.subject,
+        message: m.message,
+        isRead: m.isRead,
+        createdAt: new Date(m.createdAt).toISOString(),
+      })),
+      unreadMessages: unreadMessageRows[0]?.value ?? 0,
     };
   } catch {
     return fallbackStats();

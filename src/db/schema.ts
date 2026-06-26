@@ -302,6 +302,24 @@ export const wishlists = pgTable(
   (t) => [uniqueIndex('wishlists_user_unique').on(t.userId)],
 );
 
+export const contactMessages = pgTable(
+  'contact_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    phone: text('phone'),
+    subject: text('subject').notNull(),
+    message: text('message').notNull(),
+    isRead: boolean('is_read').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('contact_messages_created_idx').on(t.createdAt),
+    index('contact_messages_read_idx').on(t.isRead),
+  ],
+);
+
 export type UserRow = typeof users.$inferSelect;
 export type ProductRow = typeof products.$inferSelect;
 export type CategoryRow = typeof categories.$inferSelect;
@@ -314,3 +332,4 @@ export type SettingRow = typeof settings.$inferSelect;
 export type AuditLogRow = typeof auditLogs.$inferSelect;
 export type NewsletterRow = typeof newsletters.$inferSelect;
 export type WishlistRow = typeof wishlists.$inferSelect;
+export type ContactMessageRow = typeof contactMessages.$inferSelect;
