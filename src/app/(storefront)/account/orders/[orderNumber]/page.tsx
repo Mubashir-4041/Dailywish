@@ -1,17 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   ArrowLeft,
+  Ban,
   Check,
   CreditCard,
+  Loader2,
   MapPin,
   PackageX,
   Truck,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -91,39 +94,58 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderNumber)}`);
+      const data = (await res.json()) as { order?: OrderDetail; error?: string };
+      if (!res.ok) {
+        setError(
+          res.status === 404
+            ? 'We could not find this order.'
+            : res.status === 403
+              ? 'You are not authorized to view this order.'
+              : (data.error ?? 'Could not load this order.'),
+        );
+        return;
+      }
+      setError(null);
+      setOrder(data.order ?? null);
+    } catch {
+      setError('Could not load this order.');
+    } finally {
+      setLoading(false);
+    }
+  }, [orderNumber]);
 
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    fetch(`/api/orders/${encodeURIComponent(orderNumber)}`)
-      .then(async (res) => {
-        const data = (await res.json()) as {
-          order?: OrderDetail;
-          error?: string;
-        };
-        if (!active) return;
-        if (!res.ok) {
-          setError(
-            res.status === 404
-              ? 'We could not find this order.'
-              : res.status === 403
-                ? 'You are not authorized to view this order.'
-                : (data.error ?? 'Could not load this order.'),
-          );
-          return;
-        }
-        setOrder(data.order ?? null);
-      })
-      .catch(() => {
-        if (active) setError('Could not load this order.');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+    load();
+  }, [load]);
+
+  async function cancelOrder() {
+    if (!window.confirm('Cancel this order? This cannot be undone. Any payment will be refunded.')) {
+      return;
+    }
+    setCancelling(true);
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderNumber)}/cancel`, {
+        method: 'POST',
       });
-    return () => {
-      active = false;
-    };
-  }, [orderNumber]);
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        toast.error(data.error ?? 'Could not cancel this order');
+        return;
+      }
+      toast.success('Order cancelled');
+      await load();
+    } catch {
+      toast.error('Something went wrong');
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -155,6 +177,7 @@ export default function OrderDetailPage() {
   }
 
   const isCancelled = order.status === 'cancelled' || order.status === 'refunded';
+  const canCancel = order.status === 'pending' || order.status === 'confirmed';
   const currentStep = TIMELINE.indexOf(order.status);
 
   return (
@@ -233,6 +256,28 @@ export default function OrderDetailPage() {
               })}
             </ol>
           )}
+
+          {canCancel ? (
+            <div className="mt-5 flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground">
+                Changed your mind? You can cancel while the order is still being prepared.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive"
+                onClick={cancelOrder}
+                disabled={cancelling}
+              >
+                {cancelling ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Ban className="h-4 w-4" />
+                )}
+                Cancel order
+              </Button>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

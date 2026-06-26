@@ -1,7 +1,8 @@
 import 'server-only';
-import { and, eq, inArray, isNull, or, type SQL } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
-import { orders } from '@/db/schema';
+import { orders, products, coupons, type OrderRow } from '@/db/schema';
+import { refundStripeOrder } from '@/server/payments';
 
 /**
  * Which orders count as "real" / placed and should appear in customer + admin
@@ -16,6 +17,88 @@ export function placedOrderCondition(): SQL {
     eq(orders.paymentMethod, 'cod'),
     inArray(orders.paymentStatus, ['paid', 'refunded']),
   )!;
+}
+
+export interface CancelResult {
+  ok: boolean;
+  alreadyCancelled?: boolean;
+  reason?: 'not_found';
+}
+
+/**
+ * Cancel an order: restore committed inventory (+ coupon usage), set status to
+ * `cancelled`, and — for paid Stripe orders — issue a best-effort refund. Runs
+ * the DB mutation in a `FOR UPDATE` transaction so it's safe against races and
+ * idempotent (re-cancelling is a no-op). Inventory is only restored if it was
+ * actually committed (COD orders commit at checkout; online orders commit on
+ * payment), mirroring `markOrderPaid`.
+ */
+export async function cancelOrder(
+  orderNumber: string,
+  opts: { note?: string } = {},
+): Promise<CancelResult> {
+  const db = getDb();
+  const outcome = await db.transaction(
+    async (
+      tx,
+    ): Promise<{
+      ok: boolean;
+      alreadyCancelled?: boolean;
+      reason?: 'not_found';
+      order?: OrderRow;
+    }> => {
+      const [o] = await tx
+        .select()
+        .from(orders)
+        .where(eq(orders.orderNumber, orderNumber))
+        .limit(1)
+        .for('update');
+      if (!o) return { ok: false, reason: 'not_found' };
+      if (o.status === 'cancelled') return { ok: true, alreadyCancelled: true, order: o };
+
+      const committed = o.paymentMethod === 'cod' || o.paymentStatus === 'paid';
+      if (committed) {
+        for (const item of o.items ?? []) {
+          if (!item.product) continue;
+          await tx
+            .update(products)
+            .set({
+              stock: sql`${products.stock} + ${item.quantity}`,
+              sold: sql`greatest(0, ${products.sold} - ${item.quantity})`,
+            })
+            .where(eq(products.id, item.product));
+        }
+        if (o.couponCode) {
+          await tx
+            .update(coupons)
+            .set({ usedCount: sql`greatest(0, ${coupons.usedCount} - 1)` })
+            .where(eq(coupons.code, o.couponCode));
+        }
+      }
+
+      const statusHistory = [
+        ...(o.statusHistory ?? []),
+        { status: 'cancelled' as const, at: new Date().toISOString(), note: opts.note },
+      ];
+      const [updated] = await tx
+        .update(orders)
+        .set({ status: 'cancelled', statusHistory, updatedAt: new Date() })
+        .where(eq(orders.id, o.id))
+        .returning();
+      return { ok: true, order: updated };
+    },
+  );
+
+  // Best-effort refund OUTSIDE the txn (network call). Only for a freshly
+  // cancelled, paid Stripe order.
+  if (outcome.ok && !outcome.alreadyCancelled && outcome.order) {
+    const o = outcome.order;
+    if (o.paymentStatus === 'paid' && o.paymentMethod === 'stripe' && o.paymentRef) {
+      await refundStripeOrder(orderNumber, o.paymentRef).catch(() => undefined);
+    }
+  }
+
+  return { ok: outcome.ok, alreadyCancelled: outcome.alreadyCancelled, reason: outcome.reason };
 }
 
 /**

@@ -109,6 +109,29 @@ export async function markOrderPaymentFailed(
   return { ok: true };
 }
 
+/**
+ * Refund a paid Stripe order and mark it refunded. Best-effort — returns
+ * { refunded:false } if Stripe isn't configured or the refund call fails (the
+ * caller still cancels the order; an admin can retry the refund manually).
+ */
+export async function refundStripeOrder(
+  orderNumber: string,
+  paymentIntentId: string,
+): Promise<{ refunded: boolean }> {
+  const stripe = await getStripe();
+  if (!stripe) return { refunded: false };
+  try {
+    await stripe.refunds.create({ payment_intent: paymentIntentId });
+    await getDb()
+      .update(orders)
+      .set({ paymentStatus: 'refunded' as PaymentStatus })
+      .where(eq(orders.orderNumber, orderNumber));
+    return { refunded: true };
+  } catch {
+    return { refunded: false };
+  }
+}
+
 export interface ConfirmResult {
   paid: boolean;
   status: string; // Stripe PaymentIntent status, or a sentinel

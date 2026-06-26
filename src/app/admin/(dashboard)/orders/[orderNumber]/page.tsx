@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronLeft, Loader2, MapPin, Receipt, Clock } from 'lucide-react';
+import { ChevronLeft, Loader2, MapPin, Receipt, Clock, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader, StatusBadge, PaymentBadge, EmptyState } from '@/components/admin/admin-ui';
 import { Button } from '@/components/ui/button';
@@ -121,6 +121,40 @@ export default function OrderDetailPage({
       toast.success('Order updated');
       setNote('');
       setOrder(data);
+      setStatus(data.status);
+      setPaymentStatus(data.paymentStatus);
+    } catch {
+      toast.error('Something went wrong');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function cancelOrder() {
+    if (
+      !window.confirm(
+        'Cancel this order? Stock will be restored and any card payment refunded.',
+      )
+    ) {
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderNumber}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled', note: note || 'Cancelled by admin' }),
+      });
+      const data = (await res.json()) as OrderDetail & { error?: string };
+      if (!res.ok) {
+        toast.error(data.error ?? 'Could not cancel');
+        return;
+      }
+      toast.success('Order cancelled');
+      setNote('');
+      setOrder(data);
+      setStatus(data.status);
+      setPaymentStatus(data.paymentStatus);
     } catch {
       toast.error('Something went wrong');
     } finally {
@@ -298,6 +332,18 @@ export default function OrderDetailPage({
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Save update
               </Button>
+              {order.status !== 'cancelled' &&
+              order.status !== 'refunded' &&
+              order.status !== 'delivered' ? (
+                <Button
+                  variant="outline"
+                  className="w-full border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive"
+                  onClick={cancelOrder}
+                  disabled={saving}
+                >
+                  <Ban className="h-4 w-4" /> Cancel order
+                </Button>
+              ) : null}
             </CardContent>
           </Card>
 
