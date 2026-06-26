@@ -24,6 +24,8 @@ test.describe('DailyWish storefront', () => {
 
   test('contact page shows business info', async ({ page }) => {
     await page.goto('/contact');
-    await expect(page.getByText('03135119536')).toBeVisible();
+    // The phone appears in both the contact section and the footer — scope to
+    // the page body and take the first match to avoid a strict-mode violation.
+    await expect(page.getByRole('main').getByText('03135119536').first()).toBeVisible();
   });
 });
