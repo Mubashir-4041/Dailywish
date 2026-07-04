@@ -292,7 +292,12 @@ export async function getRelatedProducts(
 
 export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
   const { data } = await getProducts({ featured: true, pageSize: limit });
-  return data;
+  if (data.length > 0) return data;
+  // Nothing is explicitly flagged as featured yet — fall back to the newest
+  // active products so the homepage's Featured section never renders empty
+  // (e.g. right after a fresh catalog is set up).
+  const { data: fallback } = await getProducts({ sort: 'newest', pageSize: limit });
+  return fallback;
 }
 
 export async function getBestSellers(limit = 8): Promise<Product[]> {

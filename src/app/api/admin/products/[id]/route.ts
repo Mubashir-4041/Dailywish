@@ -4,7 +4,7 @@ import { handler, parseBody, ok, fail, takeOne } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { adminProductSchema } from '@/lib/validations';
-import { products, categories } from '@/db/schema';
+import { products, categories, reviews } from '@/db/schema';
 import { logAdminAction } from '@/server/audit';
 import { purgeUnusedImages } from '@/server/media';
 import { slugify } from '@/lib/utils';
@@ -161,10 +161,18 @@ export const DELETE = handler(async (_req: NextRequest, ctx: Ctx) => {
   const id = params.id;
   if (!id || !UUID_RE.test(id)) return fail(404, 'Product not found');
 
-  const [doc] = await db
-    .delete(products)
-    .where(eq(products.id, id))
-    .returning({ id: products.id, name: products.name, images: products.images });
+  // `reviews.product_id` FKs back to products with no cascade, so a plain
+  // delete of a product that has reviews violates the constraint (surfaces as a
+  // generic 500). Remove the product's reviews first, atomically with the
+  // product delete.
+  const doc = await db.transaction(async (tx) => {
+    await tx.delete(reviews).where(eq(reviews.productId, id));
+    const [row] = await tx
+      .delete(products)
+      .where(eq(products.id, id))
+      .returning({ id: products.id, name: products.name, images: products.images });
+    return row;
+  });
   if (!doc) return fail(404, 'Product not found');
 
   await logAdminAction(admin, 'product.delete', 'Product', id, {
