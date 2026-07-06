@@ -54,8 +54,41 @@ export const defaultMetadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
   },
+  verification: {
+    google: '2BJCQyP6WQAcAHsHVlosff_xDz1aItKCFrrWS4yLYzs',
+  },
   alternates: { canonical: '/' },
 };
+
+/**
+ * Per-page metadata with a SELF-REFERENCING canonical.
+ *
+ * The root `defaultMetadata` sets `alternates.canonical: '/'`, which Next.js
+ * merges into every page that doesn't override it — so any page lacking its own
+ * canonical would wrongly canonicalise to the homepage. Client-component pages
+ * (`'use client'`) can't `export const metadata`, so their route folder gets a
+ * tiny server `layout.tsx` that calls this to restore a self-referencing
+ * canonical (and opt out of indexing for private/utility routes).
+ *
+ * `path` must be the page's own path (e.g. '/login'); it's resolved against
+ * `metadataBase` (the production domain) by Next.
+ */
+export function pageMeta(opts: {
+  title?: string;
+  description?: string;
+  path: string;
+  index?: boolean;
+}): Metadata {
+  const meta: Metadata = {
+    alternates: { canonical: opts.path },
+  };
+  if (opts.title) meta.title = opts.title;
+  if (opts.description) meta.description = opts.description;
+  if (opts.index === false) {
+    meta.robots = { index: false, follow: false, googleBot: { index: false, follow: false } };
+  }
+  return meta;
+}
 
 export function buildProductMetadata(product: Product): Metadata {
   const title = product.seo?.title ?? product.name;

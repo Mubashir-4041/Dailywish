@@ -9,7 +9,7 @@ export const siteConfig = {
   tagline: 'Glow Every Day',
   description:
     'DailyWish offers premium skincare & cosmetics - Vitamin C whitening face wash, serums, creams, anti-acne and skin polish - for fair, healthy, glowing skin.',
-  url: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
+  url: process.env.NEXT_PUBLIC_APP_URL ?? 'https://daily-wish.com',
   email: 'Kashifkhaan777@gmail.com',
   phone: '03135119536',
   phoneIntl: '+923135119536',

@@ -1,6 +1,13 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getCurrentUser, isAdminRole } from '@/lib/auth';
 import { AccountNav } from '@/components/account/account-nav';
+
+// The whole customer account area is private (login-gated + disallowed in
+// robots.txt) — keep it out of the index. Applies to every /account/* page.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
+};
 import {
   Avatar,
   AvatarFallback,
