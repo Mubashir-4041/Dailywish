@@ -1,11 +1,19 @@
 import type { MetadataRoute } from 'next';
 import { siteConfig } from '@/config/site';
-import { getAllProductSlugs, getCategories } from '@/server/catalog';
+import { getProducts, getCategories } from '@/server/catalog';
+
+const BASE = siteConfig.url;
+
+/** Sitemap image URLs must be absolute; Cloudinary URLs already are, local ones aren't. */
+function absolute(url: string): string {
+  return url.startsWith('http') ? url : `${BASE}${url}`;
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = siteConfig.url;
   const now = new Date();
 
+  // Public, indexable content pages only. Auth pages (/login, /register) are
+  // intentionally excluded — they carry no SEO value and shouldn't be listed.
   const staticRoutes = [
     '',
     '/shop',
@@ -15,29 +23,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/privacy-policy',
     '/terms',
     '/return-policy',
-    '/login',
-    '/register',
   ].map((path) => ({
-    url: `${base}${path}`,
+    url: `${BASE}${path}`,
     lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: path === '' ? 1 : 0.7,
   }));
 
-  const [slugs, categories] = await Promise.all([
-    getAllProductSlugs(),
+  const [{ data: products }, categories] = await Promise.all([
+    getProducts({ pageSize: 1000 }),
     getCategories(),
   ]);
 
-  const productRoutes = slugs.map((slug) => ({
-    url: `${base}/product/${slug}`,
+  // Product pages carry their images so photos are eligible for Google Images.
+  const productRoutes = products.map((p) => ({
+    url: `${BASE}/product/${p.slug}`,
     lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: 0.9,
+    images: p.images.map((i) => absolute(i.url)),
   }));
 
   const categoryRoutes = categories.map((c) => ({
-    url: `${base}/shop?category=${c.slug}`,
+    url: `${BASE}/shop?category=${c.slug}`,
     lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: 0.6,
