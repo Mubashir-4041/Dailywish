@@ -83,6 +83,20 @@ export function enforceRateLimit(
   return null;
 }
 
+/**
+ * Flatten a ZodError into `{ path: [messages] }`. Unlike `error.flatten()`,
+ * this keeps errors nested inside arrays/objects (e.g. `variants.0.sku`) instead
+ * of dropping them, so the client can always name the offending field.
+ */
+export function zodFieldErrors(error: ZodError): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const issue of error.issues) {
+    const key = issue.path.length ? issue.path.join('.') : '_root';
+    (out[key] ??= []).push(issue.message);
+  }
+  return out;
+}
+
 /** Parse + validate a JSON body against a Zod schema (with sanitization). */
 export async function parseBody<T>(
   req: NextRequest,
@@ -97,7 +111,7 @@ export async function parseBody<T>(
   const result = schema.safeParse(sanitize(raw));
   if (!result.success) {
     return {
-      response: fail(422, 'Validation failed', result.error.flatten().fieldErrors),
+      response: fail(422, 'Validation failed', zodFieldErrors(result.error)),
     };
   }
   return { data: result.data };
@@ -116,7 +130,7 @@ export function handler(
     } catch (err) {
       if (err instanceof AuthError) return fail(err.status, err.message);
       if (err instanceof ZodError) {
-        return fail(422, 'Validation failed', err.flatten().fieldErrors);
+        return fail(422, 'Validation failed', zodFieldErrors(err));
       }
       if (err instanceof DatabaseUnavailableError) {
         return fail(503, 'This feature requires a database connection. Configure DATABASE_URL.');

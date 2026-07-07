@@ -70,6 +70,51 @@ interface CategoryOption {
   name: string;
 }
 
+/** Human-friendly labels for the zod field keys returned by the API. */
+const FIELD_LABELS: Record<string, string> = {
+  name: 'Name',
+  slug: 'Slug',
+  shortDescription: 'Short description',
+  description: 'Full description',
+  category: 'Category',
+  price: 'Price',
+  comparePrice: 'Compare-at price',
+  costPrice: 'Cost price',
+  sku: 'SKU',
+  stock: 'Stock',
+  images: 'Images',
+  variants: 'Variants',
+  features: 'Features',
+  tags: 'Tags',
+};
+
+/**
+ * A variant row is "untouched" when the user added it but never filled the two
+ * fields the schema requires (`value` + `sku`). These get dropped before submit
+ * so an empty "Add variant" click can't block the whole save. A *partially*
+ * filled row (one of the two present) is kept on purpose, so the user gets a
+ * pointed validation error rather than silently losing what they started typing.
+ */
+function isBlankVariant(v: ProductVariantInput): boolean {
+  return !v.value.trim() && !v.sku.trim();
+}
+
+/** Turn the API's `{ field: [messages] }` payload into one readable line. */
+function firstFieldError(
+  details: Record<string, string[] | undefined>,
+): string | null {
+  for (const [field, messages] of Object.entries(details)) {
+    const msg = messages?.[0];
+    if (!msg) continue;
+    // Nested keys look like `variants.0.sku` — label the root and keep the rest.
+    const [root, ...rest] = field.split('.');
+    const label = FIELD_LABELS[root!] ?? root!;
+    const suffix = rest.length ? ` (${rest.join('.')})` : '';
+    return `${label}${suffix}: ${msg}`;
+  }
+  return null;
+}
+
 interface ProductFormProps {
   mode: 'create' | 'edit';
   productId?: string;
@@ -200,11 +245,13 @@ export function ProductForm({
         stock: Number(values.stock) || 0,
         comparePrice: values.comparePrice ? Number(values.comparePrice) : undefined,
         costPrice: values.costPrice ? Number(values.costPrice) : undefined,
-        variants: values.variants.map((v) => ({
-          ...v,
-          priceDelta: Number(v.priceDelta) || 0,
-          stock: Number(v.stock) || 0,
-        })),
+        variants: values.variants
+          .filter((v) => !isBlankVariant(v))
+          .map((v) => ({
+            ...v,
+            priceDelta: Number(v.priceDelta) || 0,
+            stock: Number(v.stock) || 0,
+          })),
       };
       const url = mode === 'create' ? '/api/admin/products' : `/api/admin/products/${productId}`;
       const res = await fetch(url, {
@@ -212,9 +259,13 @@ export function ProductForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as {
+        error?: string;
+        details?: Record<string, string[] | undefined>;
+      };
       if (!res.ok) {
-        toast.error(data.error ?? 'Could not save product');
+        const fieldMsg = data.details && firstFieldError(data.details);
+        toast.error(fieldMsg ?? data.error ?? 'Could not save product');
         return;
       }
       toast.success(mode === 'create' ? 'Product created' : 'Product updated');
@@ -241,6 +292,7 @@ export function ProductForm({
                 id="name"
                 value={values.name}
                 onChange={(e) => set('name', e.target.value)}
+                maxLength={140}
                 required
               />
             </div>
@@ -269,9 +321,14 @@ export function ProductForm({
               <Textarea
                 id="shortDescription"
                 rows={2}
+                maxLength={280}
                 value={values.shortDescription}
                 onChange={(e) => set('shortDescription', e.target.value)}
               />
+              <p className="text-xs text-muted-foreground">
+                {values.shortDescription.length}/280 — long marketing copy belongs
+                in <span className="font-medium">Full description</span> below.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Full description</Label>
