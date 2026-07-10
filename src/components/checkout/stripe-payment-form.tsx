@@ -18,11 +18,13 @@ interface Props {
   clientSecret: string;
   orderNumber: string;
   amount: number;
+  /** Magic tracking token, threaded onto the return URL so guests can track. */
+  track?: string;
   onBack: () => void;
 }
 
 /** Inner form — must live inside <Elements> to use the Stripe hooks. */
-function PaymentInner({ orderNumber, amount, onBack }: Omit<Props, 'clientSecret'>) {
+function PaymentInner({ orderNumber, amount, track, onBack }: Omit<Props, 'clientSecret'>) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = React.useState(false);
@@ -39,7 +41,7 @@ function PaymentInner({ orderNumber, amount, onBack }: Omit<Props, 'clientSecret
         // Stripe redirects here after any required authentication (3DS). The
         // success page re-verifies the PaymentIntent server-side before
         // showing "paid", so this URL can't be spoofed into a false success.
-        return_url: `${window.location.origin}/checkout/success?order=${encodeURIComponent(orderNumber)}`,
+        return_url: `${window.location.origin}/checkout/success?order=${encodeURIComponent(orderNumber)}${track ? `&t=${encodeURIComponent(track)}` : ''}`,
       },
     });
 
@@ -76,7 +78,7 @@ function PaymentInner({ orderNumber, amount, onBack }: Omit<Props, 'clientSecret
   );
 }
 
-export function StripePaymentForm({ clientSecret, orderNumber, amount, onBack }: Props) {
+export function StripePaymentForm({ clientSecret, orderNumber, amount, track, onBack }: Props) {
   // Resolve the Stripe.js instance up front so we can show a clear error if it
   // fails to load (blocked by CSP, offline, ad-blocker) instead of an <Elements>
   // that spins forever.
@@ -122,7 +124,7 @@ export function StripePaymentForm({ clientSecret, orderNumber, amount, onBack }:
         appearance: { theme: 'stripe', variables: { colorPrimary: '#b56e1f' } },
       }}
     >
-      <PaymentInner orderNumber={orderNumber} amount={amount} onBack={onBack} />
+      <PaymentInner orderNumber={orderNumber} amount={amount} track={track} onBack={onBack} />
     </Elements>
   );
 }

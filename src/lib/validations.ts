@@ -89,7 +89,10 @@ export const checkoutSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   items: z.array(cartItemSchema).min(1, 'Your cart is empty'),
   shippingAddress: addressSchema,
-  paymentMethod: z.enum(['cod', 'stripe', 'paypal']),
+  // PayPal is intentionally omitted — it was a non-functional stub and is
+  // removed from checkout. `PaymentMethod` still includes it so historical
+  // orders keep rendering; new orders can only be COD or Stripe.
+  paymentMethod: z.enum(['cod', 'stripe']),
   couponCode: z.string().trim().toUpperCase().optional().or(z.literal('')),
   notes: z.string().trim().max(500).optional().or(z.literal('')),
 });

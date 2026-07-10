@@ -63,12 +63,11 @@ export async function middleware(req: NextRequest) {
 
   const isAdminPath = pathname.startsWith('/admin') && pathname !== '/admin/login';
   const isAccountPath = pathname.startsWith('/account');
-  // Checkout requires an account so the order is tied to a user and shows in
-  // their dashboard. The cart (/cart) stays public — guests build a cart, then
-  // are sent to log in / register when they proceed to checkout.
-  const isCheckoutPath = pathname.startsWith('/checkout');
+  // Checkout is intentionally PUBLIC — guests can order without an account. The
+  // checkout route auto-creates a passwordless profile from the order details
+  // and emails a magic tracking link, so no login is required to buy or track.
 
-  if (isAdminPath || isAccountPath || isCheckoutPath) {
+  if (isAdminPath || isAccountPath) {
     const payload = await resolvePayload(req);
 
     if (!payload) {

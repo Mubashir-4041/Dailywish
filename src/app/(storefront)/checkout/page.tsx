@@ -3,7 +3,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Loader2, ShieldCheck, Banknote, CreditCard, Wallet } from 'lucide-react';
+import { Loader2, ShieldCheck, Banknote, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,6 @@ import type { PaymentMethod } from '@/types';
 const PAYMENTS: { value: PaymentMethod; label: string; desc: string; icon: React.ElementType }[] = [
   { value: 'cod', label: 'Cash on Delivery', desc: 'Pay when your order arrives.', icon: Banknote },
   { value: 'stripe', label: 'Card (Stripe)', desc: 'Secure card payment.', icon: CreditCard },
-  { value: 'paypal', label: 'PayPal', desc: 'Pay with your PayPal account.', icon: Wallet },
 ];
 
 export default function CheckoutPage() {
@@ -32,6 +31,7 @@ export default function CheckoutPage() {
     clientSecret: string;
     orderNumber: string;
     amount: number;
+    track?: string;
   } | null>(null);
   const [form, setForm] = React.useState({
     email: '',
@@ -45,8 +45,8 @@ export default function CheckoutPage() {
     notes: '',
   });
 
-  // Checkout requires a logged-in user (enforced by middleware) — prefill their
-  // contact details so they don't retype them.
+  // Checkout is open to guests. If the visitor happens to be logged in, prefill
+  // their contact details so they don't retype them (no-op for guests).
   React.useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => (r.ok ? r.json() : null))
@@ -117,14 +117,16 @@ export default function CheckoutPage() {
           clientSecret: data.payment.clientSecret,
           orderNumber: data.orderNumber,
           amount: data.total ?? total,
+          track: data.track,
         });
         setLoading(false);
         return;
       }
 
-      // COD (and the PayPal stub): nothing to charge online — straight to done.
+      // COD: nothing to charge online — straight to done.
       cart.clear();
-      router.push(`/checkout/success?order=${data.orderNumber}`);
+      const trackParam = data.track ? `&t=${encodeURIComponent(data.track)}` : '';
+      router.push(`/checkout/success?order=${data.orderNumber}${trackParam}`);
     } catch (err) {
       toast.error((err as Error).message);
       setLoading(false);
@@ -154,6 +156,7 @@ export default function CheckoutPage() {
               clientSecret={stripeStep.clientSecret}
               orderNumber={stripeStep.orderNumber}
               amount={stripeStep.amount}
+              track={stripeStep.track}
               onBack={() => setStripeStep(null)}
             />
           </CardContent>
@@ -246,11 +249,6 @@ export default function CheckoutPage() {
               <p className="mt-2 text-xs text-muted-foreground">
                 You&apos;ll enter your card details securely on the next step. Test card:
                 4242 4242 4242 4242, any future date / CVC.
-              </p>
-            )}
-            {method === 'paypal' && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                PayPal isn&apos;t live yet — your order will be placed as payment-pending.
               </p>
             )}
           </section>

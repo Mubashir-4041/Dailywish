@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { getDb } from '@/lib/db';
-import { orders, products, coupons, type OrderRow } from '@/db/schema';
+import { orders, products, coupons, users, type OrderRow } from '@/db/schema';
 import { refundStripeOrder } from '@/server/payments';
 
 /**
@@ -99,6 +99,65 @@ export async function cancelOrder(
   }
 
   return { ok: outcome.ok, alreadyCancelled: outcome.alreadyCancelled, reason: outcome.reason };
+}
+
+/**
+ * A passwordless "shadow" account is created for guests at checkout so their
+ * order attaches to a real customer profile (visible in admin) and can be
+ * claimed later. It is marked by an EMPTY password hash — bcrypt.compare never
+ * matches an empty hash, so a shadow account can't be logged into until the
+ * person registers with the same email and sets a password (see register).
+ */
+export const SHADOW_PASSWORD_HASH = '';
+
+/**
+ * Find-or-create a customer profile for a guest checkout, keyed by email.
+ * Returns the user id to attach the order to, or `null` if it couldn't be
+ * created (the order is still placed as a guest order and stays claimable).
+ *
+ * Race-safe: a concurrent checkout with the same new email can't cause a
+ * unique-violation crash — `onConflictDoNothing` + a follow-up read resolves it.
+ * If the email already belongs to a real account, that account is reused so the
+ * order shows up in their dashboard.
+ */
+export async function ensureGuestProfile(
+  email: string,
+  name?: string,
+  phone?: string,
+): Promise<string | null> {
+  try {
+    const db = getDb();
+    const [existing] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    if (existing) return String(existing.id);
+
+    const [created] = await db
+      .insert(users)
+      .values({
+        name: name?.trim() || email.split('@')[0] || 'Guest',
+        email,
+        passwordHash: SHADOW_PASSWORD_HASH,
+        role: 'customer',
+        phone: phone?.trim() || null,
+      })
+      .onConflictDoNothing({ target: users.email })
+      .returning({ id: users.id });
+    if (created) return String(created.id);
+
+    // Lost the insert race — the row now exists, fetch it.
+    const [row] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    return row ? String(row.id) : null;
+  } catch {
+    // Never block an order on profile creation.
+    return null;
+  }
 }
 
 /**

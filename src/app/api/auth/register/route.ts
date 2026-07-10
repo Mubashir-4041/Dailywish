@@ -22,27 +22,42 @@ export const POST = handler(async (req: NextRequest) => {
   const db = getDb();
 
   const [existing] = await db
-    .select({ id: users.id })
+    .select({ id: users.id, passwordHash: users.passwordHash })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
-  if (existing) return fail(409, 'An account with this email already exists');
+  // A real (password-bearing) account already owns this email — block. But a
+  // passwordless "shadow" profile (auto-created for a guest checkout) has no
+  // password yet, so registration CLAIMS it: set the password on that same row
+  // rather than dead-ending, keeping the guest's order history attached.
+  if (existing && existing.passwordHash) {
+    return fail(409, 'An account with this email already exists');
+  }
 
   const passwordHash = await hashPassword(password);
   const verificationToken = crypto.randomBytes(32).toString('hex');
+  const verificationValues = {
+    emailVerificationToken: crypto.createHash('sha256').update(verificationToken).digest('hex'),
+    emailVerificationExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  };
 
   const user = takeOne(
-    await db
-      .insert(users)
-      .values({
-        name,
-        email,
-        passwordHash,
-        role: 'customer',
-        emailVerificationToken: crypto.createHash('sha256').update(verificationToken).digest('hex'),
-        emailVerificationExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      })
-      .returning(),
+    existing
+      ? await db
+          .update(users)
+          .set({ name, passwordHash, role: 'customer', ...verificationValues })
+          .where(eq(users.id, existing.id))
+          .returning()
+      : await db
+          .insert(users)
+          .values({
+            name,
+            email,
+            passwordHash,
+            role: 'customer',
+            ...verificationValues,
+          })
+          .returning(),
   );
 
   await createSession({

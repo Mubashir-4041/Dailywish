@@ -15,7 +15,15 @@ function SuccessContent() {
   const params = useSearchParams();
   const order = params.get('order') ?? undefined;
   const paymentIntent = params.get('payment_intent') ?? undefined;
+  const track = params.get('t') ?? undefined;
   const cart = useCart();
+
+  // Guests have no dashboard — send them to the token-based tracking page. A
+  // logged-in customer still gets their order under /account/orders.
+  const trackHref =
+    order && track
+      ? `/track/${encodeURIComponent(order)}?token=${encodeURIComponent(track)}`
+      : '/account/orders';
 
   // The order is placed regardless of online-payment outcome, so the cart is
   // done — clear it once on mount.
@@ -100,7 +108,7 @@ function SuccessContent() {
           )}
           <div className="mt-6 flex flex-col gap-2">
             <Button asChild>
-              <Link href="/account/orders">
+              <Link href={trackHref}>
                 <Package className="h-4 w-4" /> Track Your Order
               </Link>
             </Button>

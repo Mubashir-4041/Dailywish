@@ -7,6 +7,8 @@ import { getPaymentProvider } from '@/lib/payments';
 import { getDb } from '@/lib/db';
 import { orders, products, coupons } from '@/db/schema';
 import { getCurrentUser } from '@/lib/auth';
+import { ensureGuestProfile } from '@/server/orders';
+import { signOrderToken } from '@/lib/jwt';
 import { sendEmail, orderConfirmationEmail } from '@/lib/email';
 import { generateOrderNumber } from '@/lib/utils';
 import { siteConfig } from '@/config/site';
@@ -41,7 +43,20 @@ export const POST = handler(async (req: NextRequest) => {
 
   const total = Math.max(0, subtotal + shipping - discount);
   const orderNumber = generateOrderNumber();
+
+  // Attach the order to a customer profile. Logged-in users use their account;
+  // guests get a passwordless profile auto-created from their checkout details
+  // (find-or-create by email) so every order ties to a real customer record and
+  // is claimable later. Falls back to a guest order (userId null) if it can't.
   const user = await getCurrentUser();
+  let customerId: string | null = user?.id ?? null;
+  if (!customerId && process.env.DATABASE_URL) {
+    customerId = await ensureGuestProfile(
+      input.email,
+      input.shippingAddress.fullName,
+      input.shippingAddress.phone,
+    );
+  }
 
   // Initiate payment.
   const payment = getPaymentProvider(input.paymentMethod);
@@ -55,7 +70,7 @@ export const POST = handler(async (req: NextRequest) => {
 
   const orderValues = {
     orderNumber,
-    userId: user?.id ?? null,
+    userId: customerId,
     email: input.email,
     // Map priced cart lines (`productId`) onto the Order item shape (`product`).
     items: lines.map((l) => ({
@@ -112,12 +127,17 @@ export const POST = handler(async (req: NextRequest) => {
       return row;
     });
 
-    void sendEmail({ to: input.email, ...orderConfirmationEmail(order) });
+    // Magic tracking link — lets a guest view this order without an account.
+    const trackToken = await signOrderToken({ orderNumber, email: input.email });
+    const trackingUrl = `${siteConfig.url}/track/${orderNumber}?token=${trackToken}`;
+
+    void sendEmail({ to: input.email, ...orderConfirmationEmail(order, { trackingUrl }) });
 
     return created({
       orderNumber,
       total,
       payment: paymentResult,
+      track: trackToken,
     });
   }
 

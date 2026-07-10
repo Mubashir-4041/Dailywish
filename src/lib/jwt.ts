@@ -85,3 +85,42 @@ export const tokenMaxAge = {
   access: 60 * 15, // 15 minutes
   refresh: 60 * 60 * 24 * 30, // 30 days
 };
+
+/**
+ * Order-tracking token. Emailed as a magic link so a guest (no account) can
+ * view a single order without logging in. Scoped to one orderNumber+email,
+ * signed with the access secret, and long-lived (orders stay trackable for a
+ * while). It grants read-only access to exactly one order — nothing else.
+ */
+interface OrderTokenPayload extends JWTPayload {
+  ord: string; // orderNumber
+  email: string;
+  purpose: 'order-track';
+}
+
+const ORDER_TOKEN_TTL = '120d';
+
+export async function signOrderToken(input: {
+  orderNumber: string;
+  email: string;
+}): Promise<string> {
+  return new SignJWT({ ord: input.orderNumber, email: input.email, purpose: 'order-track' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setIssuer('dailywish')
+    .setExpirationTime(ORDER_TOKEN_TTL)
+    .sign(accessSecret());
+}
+
+export async function verifyOrderToken(
+  token: string,
+): Promise<{ orderNumber: string; email: string } | null> {
+  try {
+    const { payload } = await jwtVerify(token, accessSecret(), { issuer: 'dailywish' });
+    const p = payload as OrderTokenPayload;
+    if (p.purpose !== 'order-track' || !p.ord || !p.email) return null;
+    return { orderNumber: p.ord, email: p.email };
+  } catch {
+    return null;
+  }
+}

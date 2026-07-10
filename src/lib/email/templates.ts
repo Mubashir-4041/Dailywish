@@ -76,7 +76,10 @@ export function resetPasswordEmail(name: string, token: string) {
   };
 }
 
-export function orderConfirmationEmail(order: OrderEmailData) {
+export function orderConfirmationEmail(
+  order: OrderEmailData,
+  opts: { trackingUrl?: string } = {},
+) {
   const rows = order.items
     .map(
       (i) =>
@@ -98,7 +101,8 @@ export function orderConfirmationEmail(order: OrderEmailData) {
         <tr><td style="padding:8px 0;font-weight:bold;font-size:16px">Total</td><td style="padding:8px 0;text-align:right;font-weight:bold;font-size:16px">${formatPrice(order.total)}</td></tr>
        </table>
        <p>Payment method: <strong>${order.paymentMethod.toUpperCase()}</strong></p>
-       <p style="margin-top:24px">${btn(`${BRAND}/account/orders`, 'Track Your Order')}</p>`,
+       <p style="margin-top:24px">${btn(opts.trackingUrl ?? `${BRAND}/track/${order.orderNumber}`, 'Track Your Order')}</p>
+       <p style="color:#6b7280;font-size:13px;margin-top:16px">No account needed — the button above opens your order status directly.</p>`,
     ),
   };
 }

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { handler, ok, fail } from '@/lib/api';
 import { getCurrentUser } from '@/lib/auth';
+import { verifyOrderToken } from '@/lib/jwt';
 import { getDb } from '@/lib/db';
 import { orders } from '@/db/schema';
 
@@ -21,13 +22,22 @@ export const GET = handler(
       .limit(1);
     if (!order) return fail(404, 'Order not found');
 
-    // Authorize: owner, matching email (guest tracking), or admin.
+    // Authorize by any of: signed tracking token (magic link), account owner,
+    // admin, or matching email. The token is the guest path — it's scoped to
+    // exactly this order+email so it can't be used to browse other orders.
     const user = await getCurrentUser();
     const email = req.nextUrl.searchParams.get('email');
+    const token = req.nextUrl.searchParams.get('token');
     const isOwner = user && order.userId && String(order.userId) === user.id;
     const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
     const emailMatches = email && order.email === email.toLowerCase();
-    if (!isOwner && !isAdmin && !emailMatches) {
+    let tokenMatches = false;
+    if (token) {
+      const decoded = await verifyOrderToken(token);
+      tokenMatches =
+        !!decoded && decoded.orderNumber === orderNumber && decoded.email === order.email;
+    }
+    if (!isOwner && !isAdmin && !emailMatches && !tokenMatches) {
       return fail(403, 'You are not authorized to view this order');
     }
 
