@@ -152,7 +152,13 @@ export interface ProductReviewLd {
 }
 
 export function productJsonLd(product: Product, reviews: ProductReviewLd[] = []) {
-  const image = product.images.map((i) => `${BASE}${i.url}`);
+  // Image URLs may be absolute (Cloudinary) or root-relative (local /public
+  // assets). Only prefix the origin onto relative paths — prefixing an already
+  // absolute URL produced malformed `https://host/https://res.cloudinary…`
+  // links that Google couldn't fetch.
+  const image = product.images.map((i) =>
+    i.url.startsWith('http') ? i.url : `${BASE}${i.url}`,
+  );
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
