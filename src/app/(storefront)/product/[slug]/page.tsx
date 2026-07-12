@@ -19,6 +19,7 @@ import {
   getProductBySlug,
   getRelatedProducts,
   getAllProductSlugs,
+  getApprovedReviews,
 } from '@/server/catalog';
 import { buildProductMetadata, productJsonLd, breadcrumbJsonLd } from '@/lib/seo';
 
@@ -53,14 +54,17 @@ export default async function ProductPage({
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const related = await getRelatedProducts(product, 4);
+  const [related, reviews] = await Promise.all([
+    getRelatedProducts(product, 4),
+    getApprovedReviews(product._id),
+  ]);
 
   return (
     <div className="container py-8">
       <Script
         id="product-jsonld"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product)) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product, reviews)) }}
       />
       <Script
         id="breadcrumb-jsonld"

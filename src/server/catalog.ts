@@ -18,6 +18,7 @@ import {
   categories as categoriesTable,
   testimonials as testimonialsTable,
   banners as bannersTable,
+  reviews as reviewsTable,
   type ProductRow,
 } from '@/db/schema';
 import {
@@ -275,6 +276,55 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       return doc ? serializeProduct(doc) : null;
     },
     () => staticProducts.find((p) => p.slug === slug && p.isActive) ?? null,
+  );
+}
+
+export interface ReviewLd {
+  name: string;
+  rating: number;
+  title?: string;
+  comment: string;
+  createdAt: string;
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Approved reviews for a product, server-side, for JSON-LD structured data.
+ * Reviews are otherwise only fetched client-side (see product-reviews.tsx), so
+ * Googlebot never sees them — emitting the real `review`/`aggregateRating`
+ * fields here is what clears the Search Console "Missing field" warnings for
+ * products that actually have reviews. Never fabricate: returns [] when none.
+ */
+export async function getApprovedReviews(
+  productId: string,
+  limit = 10,
+): Promise<ReviewLd[]> {
+  if (!UUID_RE.test(productId)) return [];
+  return withDb(
+    async () => {
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(reviewsTable)
+        .where(
+          and(
+            eq(reviewsTable.productId, productId),
+            eq(reviewsTable.isApproved, true),
+          ),
+        )
+        .orderBy(desc(reviewsTable.createdAt))
+        .limit(limit);
+      return rows.map((r) => ({
+        name: r.name,
+        rating: r.rating,
+        title: r.title ?? undefined,
+        comment: r.comment,
+        createdAt: new Date(r.createdAt ?? Date.now()).toISOString(),
+      }));
+    },
+    () => [],
   );
 }
 

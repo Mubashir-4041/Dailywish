@@ -143,7 +143,15 @@ export function organizationJsonLd() {
   };
 }
 
-export function productJsonLd(product: Product) {
+export interface ProductReviewLd {
+  name: string;
+  rating: number;
+  title?: string;
+  comment: string;
+  createdAt: string;
+}
+
+export function productJsonLd(product: Product, reviews: ProductReviewLd[] = []) {
   const image = product.images.map((i) => `${BASE}${i.url}`);
   return {
     '@context': 'https://schema.org',
@@ -153,6 +161,9 @@ export function productJsonLd(product: Product) {
     description: product.shortDescription || product.description,
     sku: product.sku,
     brand: { '@type': 'Brand', name: product.brand },
+    // Only emitted when real, approved reviews exist — never fabricate ratings
+    // (Google structured-data policy). Products with 0 reviews simply omit
+    // these fields; the resulting Search Console warning is non-critical.
     aggregateRating:
       product.numReviews > 0
         ? {
@@ -161,6 +172,21 @@ export function productJsonLd(product: Product) {
             reviewCount: product.numReviews,
           }
         : undefined,
+    review: reviews.length
+      ? reviews.map((r) => ({
+          '@type': 'Review',
+          author: { '@type': 'Person', name: r.name },
+          datePublished: r.createdAt.slice(0, 10),
+          name: r.title || undefined,
+          reviewBody: r.comment,
+          reviewRating: {
+            '@type': 'Rating',
+            ratingValue: r.rating,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }))
+      : undefined,
     offers: {
       '@type': 'Offer',
       url: `${BASE}/product/${product.slug}`,
