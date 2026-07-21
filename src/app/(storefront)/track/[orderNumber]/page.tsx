@@ -78,6 +78,8 @@ const paymentMethodLabel: Record<PaymentMethod, string> = {
   cod: 'Cash on Delivery',
   stripe: 'Card (Stripe)',
   paypal: 'PayPal',
+  easypaisa: 'Easypaisa',
+  jazzcash: 'JazzCash',
 };
 
 function TrackContent() {

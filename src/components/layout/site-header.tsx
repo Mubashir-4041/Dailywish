@@ -93,27 +93,21 @@ export function SiteHeader({
           : 'border-transparent bg-background',
       )}
     >
-      {/* Announcement strip */}
-      <div className="bg-primary text-primary-foreground">
-        <div className="container flex h-9 items-center justify-center gap-2 text-center text-xs font-medium sm:text-sm">
-          <span className="hidden sm:inline">✨</span>
-          {settings.announcement ? (
-            settings.announcement
-          ) : (
-            <>
-              Free delivery on orders over{' '}
-              {formatPrice(settings.freeShippingThreshold)} · Cash on Delivery
-              available across Pakistan
-            </>
-          )}
-        </div>
-      </div>
+      {/* Announcement strip. Long promo text doesn't fit on phones, so it scrolls
+          as a single-line marquee; users who prefer reduced motion get a static,
+          centered version that wraps. */}
+      <AnnouncementBar
+        message={
+          settings.announcement ||
+          `Free delivery on orders over ${formatPrice(settings.freeShippingThreshold)} · Cash on Delivery available across Pakistan`
+        }
+      />
 
-      <div className="container flex h-16 items-center gap-4">
+      <div className="container flex h-16 items-center gap-2 sm:gap-4">
         {/* Mobile menu */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Menu">
+            <Button variant="ghost" size="icon" className="-ml-2 shrink-0 lg:hidden" aria-label="Menu">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
@@ -178,9 +172,9 @@ export function SiteHeader({
             width={40}
             height={40}
             priority
-            className="h-9 w-9 rounded-full object-cover ring-1 ring-border"
+            className="h-8 w-8 rounded-full object-cover ring-1 ring-border sm:h-9 sm:w-9"
           />
-          <span className="font-display text-2xl font-bold tracking-tight text-primary">
+          <span className="font-display text-xl font-bold tracking-tight text-primary sm:text-2xl">
             Daily<span className="text-accent">Wish</span>
           </span>
         </Link>
@@ -219,7 +213,7 @@ export function SiteHeader({
         </form>
 
         {/* Actions */}
-        <div className="ml-auto flex items-center gap-1 md:ml-2">
+        <div className="-mr-2 ml-auto flex items-center gap-0.5 sm:gap-1 md:ml-2 md:mr-0">
           <Button
             variant="ghost"
             size="icon"
@@ -330,5 +324,42 @@ export function SiteHeader({
         </div>
       )}
     </header>
+  );
+}
+
+/**
+ * Announcement strip. On phones a long message won't fit, so it scrolls as a
+ * seamless single-line marquee (two copies translated -50%). It pauses on hover
+ * and, for `prefers-reduced-motion`, falls back to a static centered strip that
+ * wraps — so the whole message stays readable without motion.
+ */
+function AnnouncementItem({ message, ariaHidden }: { message: string; ariaHidden?: boolean }) {
+  return (
+    <span
+      aria-hidden={ariaHidden || undefined}
+      className="flex items-center gap-2 whitespace-nowrap px-6 text-xs font-medium sm:text-sm"
+    >
+      <span aria-hidden>✨</span>
+      {message}
+    </span>
+  );
+}
+
+function AnnouncementBar({ message }: { message: string }) {
+  return (
+    <div className="bg-primary text-primary-foreground">
+      {/* Motion: scrolling marquee */}
+      <div className="relative flex h-9 items-center overflow-hidden motion-reduce:hidden">
+        <div className="animate-marquee flex shrink-0 items-center will-change-transform hover:[animation-play-state:paused]">
+          <AnnouncementItem message={message} />
+          <AnnouncementItem message={message} ariaHidden />
+        </div>
+      </div>
+      {/* Reduced motion: static, centered, wraps */}
+      <div className="hidden min-h-9 items-center justify-center gap-2 px-4 py-1.5 text-center text-xs font-medium motion-reduce:flex sm:text-sm">
+        <span aria-hidden>✨</span>
+        {message}
+      </div>
+    </div>
   );
 }

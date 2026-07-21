@@ -13,7 +13,9 @@ export type OrderStatus =
 
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
-export type PaymentMethod = 'cod' | 'stripe' | 'paypal';
+// `stripe`/`paypal` are retained so historical orders keep rendering, but new
+// orders can only be COD or one of the manual wallet methods (Easypaisa/JazzCash).
+export type PaymentMethod = 'cod' | 'stripe' | 'paypal' | 'easypaisa' | 'jazzcash';
 
 export interface ProductImage {
   url: string;
@@ -126,6 +128,8 @@ export interface Order {
   couponCode?: string;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  /** Customer-uploaded proof-of-payment screenshot (Easypaisa/JazzCash). */
+  paymentProofUrl?: string | null;
   status: OrderStatus;
   notes?: string;
   createdAt: string;

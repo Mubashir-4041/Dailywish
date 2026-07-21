@@ -11,13 +11,16 @@ import { Button } from '@/components/ui/button';
 import { Rating } from '@/components/ui/rating';
 import { useCart } from '@/components/providers/cart-provider';
 import { useWishlist } from '@/components/providers/wishlist-provider';
+import { ImagePlaceholder } from '@/components/storefront/image-placeholder';
 import type { Product } from '@/types';
 
 export function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
   const cart = useCart();
   const wishlist = useWishlist();
+  const [imgBroken, setImgBroken] = React.useState(false);
   const primary = product.images.find((i) => i.isPrimary) ?? product.images[0];
   const secondary = product.images[1];
+  const showPlaceholder = !primary || imgBroken;
   const discount = discountPercent(product.price, product.comparePrice);
   const inWishlist = wishlist.has(product._id);
   const soldOut = product.stock <= 0;
@@ -52,23 +55,25 @@ export function ProductCard({ product, index = 0 }: { product: Product; index?: 
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.3) }}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-glow transition-all duration-300 hover:-translate-y-1 hover:shadow-glow-lg"
     >
       {/* Image */}
       <Link href={`/product/${product.slug}`} className="relative block aspect-square overflow-hidden bg-muted">
-        {primary && (
+        {showPlaceholder && <ImagePlaceholder label={product.name} />}
+        {primary && !imgBroken && (
           <Image
             src={primary.url}
             alt={primary.alt || product.name}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
+            onError={() => setImgBroken(true)}
             className={cn(
               'object-cover transition-all duration-500 group-hover:scale-105',
               secondary && 'group-hover:opacity-0',
             )}
           />
         )}
-        {secondary && (
+        {secondary && !imgBroken && (
           <Image
             src={secondary.url}
             alt={secondary.alt || product.name}

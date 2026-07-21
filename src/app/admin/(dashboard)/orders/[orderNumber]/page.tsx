@@ -3,7 +3,18 @@
 import { useEffect, useState, useCallback, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronLeft, Loader2, MapPin, Receipt, Clock, Ban } from 'lucide-react';
+import {
+  ChevronLeft,
+  Loader2,
+  MapPin,
+  Receipt,
+  Clock,
+  Ban,
+  Smartphone,
+  CheckCircle2,
+  XCircle,
+  ExternalLink,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader, StatusBadge, PaymentBadge, EmptyState } from '@/components/admin/admin-ui';
 import { Button } from '@/components/ui/button';
@@ -55,6 +66,7 @@ interface OrderDetail {
   couponCode?: string | null;
   paymentMethod: string;
   paymentStatus: string;
+  paymentProofUrl?: string | null;
   status: string;
   notes?: string;
   statusHistory: { status: string; at: string; note?: string }[];
@@ -119,6 +131,46 @@ export default function OrderDetailPage({
         return;
       }
       toast.success('Order updated');
+      setNote('');
+      setOrder(data);
+      setStatus(data.status);
+      setPaymentStatus(data.paymentStatus);
+    } catch {
+      toast.error('Something went wrong');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Verify (or reject) a manual wallet payment. Verifying flips payment to
+  // `paid`, which the API routes through markOrderPaid → commits stock + moves
+  // the order to `confirmed`. Rejecting marks the payment `failed`.
+  async function setPayment(next: 'paid' | 'failed') {
+    if (
+      next === 'paid' &&
+      !window.confirm('Confirm you have received this payment? The order will be marked paid and confirmed.')
+    ) {
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderNumber}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: next === 'paid' && status === 'pending' ? 'confirmed' : status,
+          paymentStatus: next,
+          note:
+            note ||
+            (next === 'paid' ? 'Payment verified by admin.' : 'Payment could not be verified.'),
+        }),
+      });
+      const data = (await res.json()) as OrderDetail & { error?: string };
+      if (!res.ok) {
+        toast.error(data.error ?? 'Could not update payment');
+        return;
+      }
+      toast.success(next === 'paid' ? 'Payment verified' : 'Payment rejected');
       setNote('');
       setOrder(data);
       setStatus(data.status);
@@ -284,6 +336,70 @@ export default function OrderDetailPage({
         </div>
 
         <div className="space-y-6">
+          {(order.paymentMethod === 'easypaisa' || order.paymentMethod === 'jazzcash') ? (
+            <Card className="border-accent/40">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Smartphone className="h-4 w-4 text-accent" />
+                  {order.paymentMethod === 'easypaisa' ? 'Easypaisa' : 'JazzCash'} payment
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  The customer pays via mobile wallet and uploads a screenshot. Check the screenshot
+                  matches <span className="font-medium text-foreground">{formatPrice(order.total)}</span>,
+                  then verify.
+                </p>
+
+                {order.paymentProofUrl ? (
+                  <a
+                    href={order.paymentProofUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group block"
+                  >
+                    <div className="relative h-56 w-full overflow-hidden rounded-lg border bg-muted">
+                      <Image
+                        src={order.paymentProofUrl}
+                        alt="Payment screenshot"
+                        fill
+                        className="object-contain"
+                        sizes="360px"
+                      />
+                    </div>
+                    <span className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground group-hover:text-foreground">
+                      <ExternalLink className="h-3 w-3" /> Open full size
+                    </span>
+                  </a>
+                ) : (
+                  <p className="rounded-lg bg-muted px-4 py-3 text-sm text-muted-foreground">
+                    No screenshot uploaded yet. The customer can add it from their order page.
+                  </p>
+                )}
+
+                {order.paymentStatus === 'paid' ? (
+                  <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                    <CheckCircle2 className="h-4 w-4" /> Payment verified
+                  </p>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button className="flex-1" onClick={() => setPayment('paid')} disabled={saving}>
+                      <CheckCircle2 className="h-4 w-4" /> Verify payment
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive"
+                      onClick={() => setPayment('failed')}
+                      disabled={saving}
+                    >
+                      <XCircle className="h-4 w-4" /> Reject
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
+
           <Card>
             <CardHeader>
               <CardTitle>Update status</CardTitle>

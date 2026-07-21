@@ -3,6 +3,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { ImagePlaceholder } from '@/components/storefront/image-placeholder';
 import type { ProductImage } from '@/types';
 
 export function ProductGallery({
@@ -13,8 +14,8 @@ export function ProductGallery({
   name: string;
 }) {
   const [active, setActive] = React.useState(0);
-  const list = images.length ? images : [{ url: '/banners/hero-1.jpeg', alt: name }];
-  const current = list[active]!;
+  const list = images;
+  const current = list[active];
 
   return (
     <div className="flex flex-col gap-4">
@@ -25,14 +26,18 @@ export function ProductGallery({
         transition={{ duration: 0.3 }}
         className="relative aspect-square overflow-hidden rounded-2xl border bg-muted"
       >
-        <Image
-          src={current.url}
-          alt={current.alt || name}
-          fill
-          priority
-          sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-cover"
-        />
+        {current ? (
+          <Image
+            src={current.url}
+            alt={current.alt || name}
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover"
+          />
+        ) : (
+          <ImagePlaceholder label={name} />
+        )}
       </motion.div>
 
       {list.length > 1 && (

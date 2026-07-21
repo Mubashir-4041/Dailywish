@@ -27,6 +27,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate, formatPrice } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { ManualPaymentPanel } from '@/components/checkout/manual-payment-panel';
 import type { OrderStatus, PaymentMethod, PaymentStatus } from '@/types';
 
 interface OrderDetail {
@@ -36,6 +37,7 @@ interface OrderDetail {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  paymentProofUrl?: string | null;
   createdAt: string;
   subtotal: number;
   shipping: number;
@@ -85,6 +87,8 @@ const paymentMethodLabel: Record<PaymentMethod, string> = {
   cod: 'Cash on Delivery',
   stripe: 'Card (Stripe)',
   paypal: 'PayPal',
+  easypaisa: 'Easypaisa',
+  jazzcash: 'JazzCash',
 };
 
 export default function OrderDetailPage() {
@@ -400,6 +404,21 @@ export default function OrderDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Manual wallet payment: show the number + screenshot uploader while the
+          order is still unpaid and not cancelled. */}
+      {(order.paymentMethod === 'easypaisa' || order.paymentMethod === 'jazzcash') &&
+      order.paymentStatus !== 'paid' &&
+      !isCancelled ? (
+        <ManualPaymentPanel
+          orderNumber={order.orderNumber}
+          amount={order.total}
+          method={order.paymentMethod}
+          paymentStatus={order.paymentStatus}
+          initialProofUrl={order.paymentProofUrl}
+          onUploaded={() => load()}
+        />
+      ) : null}
     </div>
   );
 }

@@ -16,6 +16,11 @@ const settingsSchema = z.object({
   instagram: z.string().trim().max(200).optional().or(z.literal('')),
   tiktok: z.string().trim().max(200).optional().or(z.literal('')),
   youtube: z.string().trim().max(200).optional().or(z.literal('')),
+  // Manual mobile-wallet payment details shown to customers at checkout.
+  easypaisaNumber: z.string().trim().max(30).optional().or(z.literal('')),
+  easypaisaName: z.string().trim().max(80).optional().or(z.literal('')),
+  jazzcashNumber: z.string().trim().max(30).optional().or(z.literal('')),
+  jazzcashName: z.string().trim().max(80).optional().or(z.literal('')),
 });
 
 export const GET = handler(async () => {

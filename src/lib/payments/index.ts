@@ -71,10 +71,26 @@ class PayPalProvider implements PaymentProvider {
   }
 }
 
+/**
+ * Manual mobile-wallet payment (Easypaisa / JazzCash). There's no online API
+ * charge: the customer transfers the amount to our wallet number, uploads a
+ * payment screenshot, and an admin verifies it (which flips the order to
+ * `paid` and commits stock via `markOrderPaid`). So `createPayment` just marks
+ * the order as payment-pending — exactly like COD, but settled on verification.
+ */
+class ManualWalletProvider implements PaymentProvider {
+  constructor(readonly method: 'easypaisa' | 'jazzcash') {}
+  async createPayment(): Promise<PaymentResult> {
+    return { provider: this.method, status: 'pending' };
+  }
+}
+
 const providers: Record<PaymentMethod, PaymentProvider> = {
   cod: new CodProvider(),
   stripe: new StripeProvider(),
   paypal: new PayPalProvider(),
+  easypaisa: new ManualWalletProvider('easypaisa'),
+  jazzcash: new ManualWalletProvider('jazzcash'),
 };
 
 export function getPaymentProvider(method: PaymentMethod): PaymentProvider {

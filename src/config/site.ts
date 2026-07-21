@@ -23,6 +23,12 @@ export const siteConfig = {
     tiktok: 'https://tiktok.com/@majidcosmetics10',
     youtube: 'https://youtube.com/@dailywish',
   },
+  // Fallback wallet details for the manual mobile-wallet checkout methods.
+  // These are editable by the owner in Admin → Settings (which override these).
+  payments: {
+    easypaisa: { number: '03135119536', accountName: 'Kashif Ali' },
+    jazzcash: { number: '03135119536', accountName: 'Kashif Ali' },
+  },
   locations: [
     {
       id: 'swabi',

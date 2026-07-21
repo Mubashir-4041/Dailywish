@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { PageHeader, DbNotice, EmptyState, StatusBadge, PaymentBadge } from '@/components/admin/admin-ui';
+import { PageHeader, DbNotice, EmptyState, StatusBadge, PaymentBadge, HelpNote } from '@/components/admin/admin-ui';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -80,6 +80,14 @@ export default function AdminOrdersPage() {
       <PageHeader title="Orders" description="Track and fulfill customer orders." />
 
       {noDb ? <DbNotice /> : null}
+
+      <HelpNote className="mb-4">
+        <span className="font-medium">Getting an Easypaisa or JazzCash order?</span> Open the order,
+        check the payment screenshot the customer uploaded matches the total, then press{' '}
+        <span className="font-medium">Verify payment</span>. That confirms the order and reserves the
+        stock. If money never arrived, press <span className="font-medium">Reject</span>. Change the
+        wallet numbers anytime under <Link href="/admin/settings">Settings</Link>.
+      </HelpNote>
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">
         <div className="relative max-w-sm flex-1">

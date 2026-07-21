@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Loader2, Save, Building2 } from 'lucide-react';
+import { Loader2, Save, Building2, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader, DbNotice } from '@/components/admin/admin-ui';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,10 @@ interface SettingsState {
   instagram: string;
   tiktok: string;
   youtube: string;
+  easypaisaNumber: string;
+  easypaisaName: string;
+  jazzcashNumber: string;
+  jazzcashName: string;
 }
 
 export default function AdminSettingsPage() {
@@ -35,6 +39,10 @@ export default function AdminSettingsPage() {
     instagram: siteConfig.social.instagram,
     tiktok: siteConfig.social.tiktok,
     youtube: siteConfig.social.youtube,
+    easypaisaNumber: siteConfig.payments.easypaisa.number,
+    easypaisaName: siteConfig.payments.easypaisa.accountName,
+    jazzcashNumber: siteConfig.payments.jazzcash.number,
+    jazzcashName: siteConfig.payments.jazzcash.accountName,
   });
   const [loading, setLoading] = useState(true);
   const [noDb, setNoDb] = useState(false);
@@ -133,6 +141,56 @@ export default function AdminSettingsPage() {
                     type="number"
                     value={values.freeShippingThreshold}
                     onChange={(e) => set('freeShippingThreshold', e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Smartphone className="h-4 w-4 text-accent" /> Payment wallets
+                </CardTitle>
+                <CardDescription>
+                  These numbers are shown to customers at checkout when they choose Easypaisa or
+                  JazzCash. They send payment here, then upload a screenshot you verify under Orders.
+                  Enter the number exactly as it should appear (e.g. 0313-1234567) and the account
+                  title it is registered to.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Easypaisa number</Label>
+                  <Input
+                    inputMode="tel"
+                    placeholder="03xx-xxxxxxx"
+                    value={values.easypaisaNumber}
+                    onChange={(e) => set('easypaisaNumber', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Easypaisa account title</Label>
+                  <Input
+                    placeholder="Name on the Easypaisa account"
+                    value={values.easypaisaName}
+                    onChange={(e) => set('easypaisaName', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>JazzCash number</Label>
+                  <Input
+                    inputMode="tel"
+                    placeholder="03xx-xxxxxxx"
+                    value={values.jazzcashNumber}
+                    onChange={(e) => set('jazzcashNumber', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>JazzCash account title</Label>
+                  <Input
+                    placeholder="Name on the JazzCash account"
+                    value={values.jazzcashName}
+                    onChange={(e) => set('jazzcashName', e.target.value)}
                   />
                 </div>
               </CardContent>

@@ -3,7 +3,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Loader2, ShieldCheck, Banknote, CreditCard } from 'lucide-react';
+import { Loader2, ShieldCheck, Banknote, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,26 +13,30 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { cn, formatPrice } from '@/lib/utils';
 import { useCart } from '@/components/providers/cart-provider';
-import { StripePaymentForm } from '@/components/checkout/stripe-payment-form';
+// NOTE: Stripe card payments are disabled for now (US/USD test-mode only). The
+// StripePaymentForm and its checkout step are commented out below rather than
+// deleted — to re-enable cards, add 'stripe' back to the checkout enum in
+// lib/validations.ts and restore the commented import + step.
+// import { StripePaymentForm } from '@/components/checkout/stripe-payment-form';
 import type { PaymentMethod } from '@/types';
 
+type ManualMethod = 'easypaisa' | 'jazzcash';
+type Wallet = { number: string; accountName: string };
+
 const PAYMENTS: { value: PaymentMethod; label: string; desc: string; icon: React.ElementType }[] = [
-  { value: 'cod', label: 'Cash on Delivery', desc: 'Pay when your order arrives.', icon: Banknote },
-  { value: 'stripe', label: 'Card (Stripe)', desc: 'Secure card payment.', icon: CreditCard },
+  { value: 'cod', label: 'Cash on Delivery', desc: 'Pay in cash when your order arrives.', icon: Banknote },
+  { value: 'easypaisa', label: 'Easypaisa', desc: 'Send payment & upload the screenshot.', icon: Smartphone },
+  { value: 'jazzcash', label: 'JazzCash', desc: 'Send payment & upload the screenshot.', icon: Smartphone },
 ];
+
+const isManual = (m: PaymentMethod): m is ManualMethod => m === 'easypaisa' || m === 'jazzcash';
 
 export default function CheckoutPage() {
   const cart = useCart();
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
   const [method, setMethod] = React.useState<PaymentMethod>('cod');
-  // When set, the Stripe card step is shown instead of the form.
-  const [stripeStep, setStripeStep] = React.useState<{
-    clientSecret: string;
-    orderNumber: string;
-    amount: number;
-    track?: string;
-  } | null>(null);
+  const [wallets, setWallets] = React.useState<Record<ManualMethod, Wallet> | null>(null);
   const [form, setForm] = React.useState({
     email: '',
     fullName: '',
@@ -45,8 +49,18 @@ export default function CheckoutPage() {
     notes: '',
   });
 
-  // Checkout is open to guests. If the visitor happens to be logged in, prefill
-  // their contact details so they don't retype them (no-op for guests).
+  // Load the wallet numbers so we can show them inline when the customer picks
+  // Easypaisa / JazzCash.
+  React.useEffect(() => {
+    fetch('/api/payment-info')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { payments?: Record<ManualMethod, Wallet> } | null) => {
+        if (d?.payments) setWallets(d.payments);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  // Prefill the logged-in customer's contact details so they don't retype them.
   React.useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => (r.ok ? r.json() : null))
@@ -109,21 +123,9 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Checkout failed');
 
-      // Card (Stripe): the order is created as payment-pending and we now have a
-      // PaymentIntent client secret — show the card step and collect/charge the
-      // card. The cart is cleared only once the order is settled (success page).
-      if (method === 'stripe' && data.payment?.clientSecret) {
-        setStripeStep({
-          clientSecret: data.payment.clientSecret,
-          orderNumber: data.orderNumber,
-          amount: data.total ?? total,
-          track: data.track,
-        });
-        setLoading(false);
-        return;
-      }
-
-      // COD: nothing to charge online — straight to done.
+      // COD and manual wallets both create a payment-pending order with nothing
+      // to charge online. The success page shows next steps — for Easypaisa /
+      // JazzCash it prompts the customer to upload their payment screenshot.
       cart.clear();
       const trackParam = data.track ? `&t=${encodeURIComponent(data.track)}` : '';
       router.push(`/checkout/success?order=${data.orderNumber}${trackParam}`);
@@ -138,32 +140,6 @@ export default function CheckoutPage() {
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm({ ...form, [k]: e.target.value }),
   });
-
-  // ── Stripe card step ────────────────────────────────────────────────────
-  if (stripeStep) {
-    return (
-      <div className="container flex min-h-[60vh] items-center justify-center py-10">
-        <Card className="w-full max-w-md">
-          <CardContent className="space-y-5 p-6">
-            <div>
-              <h1 className="font-display text-2xl font-bold tracking-tight">Pay with card</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Order <span className="font-mono font-medium">{stripeStep.orderNumber}</span> ·{' '}
-                {formatPrice(stripeStep.amount)}
-              </p>
-            </div>
-            <StripePaymentForm
-              clientSecret={stripeStep.clientSecret}
-              orderNumber={stripeStep.orderNumber}
-              amount={stripeStep.amount}
-              track={stripeStep.track}
-              onBack={() => setStripeStep(null)}
-            />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="container py-10">
@@ -245,11 +221,24 @@ export default function CheckoutPage() {
                 </label>
               ))}
             </div>
-            {method === 'stripe' && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                You&apos;ll enter your card details securely on the next step. Test card:
-                4242 4242 4242 4242, any future date / CVC.
-              </p>
+            {isManual(method) && (
+              <div className="mt-3 rounded-lg border border-accent/30 bg-accent/5 p-4 text-sm">
+                <p className="font-medium">
+                  Send {formatPrice(total)} via {method === 'easypaisa' ? 'Easypaisa' : 'JazzCash'} to:
+                </p>
+                <p className="mt-1 font-mono text-lg font-semibold">
+                  {wallets ? wallets[method].number : '···'}
+                </p>
+                {wallets?.[method].accountName ? (
+                  <p className="text-xs text-muted-foreground">
+                    Account title: {wallets[method].accountName}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  After placing your order, you&apos;ll upload your payment screenshot so we can verify
+                  and dispatch it. You can also do this later from your order page.
+                </p>
+              </div>
             )}
           </section>
 

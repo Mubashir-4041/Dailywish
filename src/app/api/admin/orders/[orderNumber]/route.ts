@@ -7,6 +7,7 @@ import { adminOrderStatusSchema } from '@/lib/validations';
 import { orders, type OrderRow } from '@/db/schema';
 import { logAdminAction } from '@/server/audit';
 import { cancelOrder } from '@/server/orders';
+import { markOrderPaid } from '@/server/payments';
 import { sendEmail, orderStatusEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
@@ -34,6 +35,7 @@ function serializeOrder(o: OrderRow) {
     couponCode: o.couponCode ?? null,
     paymentMethod: o.paymentMethod,
     paymentStatus: o.paymentStatus,
+    paymentProofUrl: o.paymentProofUrl ?? null,
     status: o.status,
     notes: o.notes ?? '',
     statusHistory: (o.statusHistory ?? []).map((h) => ({
@@ -91,9 +93,25 @@ export const PATCH = handler(async (req: NextRequest, ctx: Ctx) => {
     return ok(serializeOrder(order));
   }
 
-  const statusChanged = doc.status !== status;
+  // Verifying a manual wallet payment (Easypaisa/JazzCash): flipping payment to
+  // `paid` on a non-COD order must commit inventory + coupon usage, which only
+  // `markOrderPaid` does (transactional, row-locked, idempotent). Setting the
+  // column directly here would leave stock un-decremented. COD already committed
+  // stock at checkout, so it just needs the column flip in the normal update.
+  let base = doc;
+  if (
+    paymentStatus === 'paid' &&
+    doc.paymentStatus !== 'paid' &&
+    doc.paymentMethod !== 'cod'
+  ) {
+    await markOrderPaid(orderNumber, doc.paymentRef ?? undefined);
+    const [fresh] = await db.select().from(orders).where(eq(orders.id, doc.id)).limit(1);
+    if (fresh) base = fresh;
+  }
+
+  const statusChanged = base.status !== status;
   const statusHistory = [
-    ...(doc.statusHistory ?? []),
+    ...(base.statusHistory ?? []),
     { status, at: new Date().toISOString(), note },
   ];
 
@@ -106,7 +124,7 @@ export const PATCH = handler(async (req: NextRequest, ctx: Ctx) => {
         statusHistory,
         updatedAt: new Date(),
       })
-      .where(eq(orders.id, doc.id))
+      .where(eq(orders.id, base.id))
       .returning(),
   );
 

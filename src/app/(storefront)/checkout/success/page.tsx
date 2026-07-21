@@ -8,8 +8,15 @@ import { CheckCircle2, Package, ArrowRight, Clock, Loader2, AlertTriangle } from
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCart } from '@/components/providers/cart-provider';
+import { ManualPaymentPanel } from '@/components/checkout/manual-payment-panel';
 
 type PayState = 'loading' | 'paid' | 'processing' | 'failed' | 'placed';
+type ManualOrder = {
+  paymentMethod: 'easypaisa' | 'jazzcash';
+  total: number;
+  paymentStatus: string;
+  paymentProofUrl?: string | null;
+};
 
 function SuccessContent() {
   const params = useSearchParams();
@@ -17,6 +24,23 @@ function SuccessContent() {
   const paymentIntent = params.get('payment_intent') ?? undefined;
   const track = params.get('t') ?? undefined;
   const cart = useCart();
+
+  // For Easypaisa / JazzCash orders, fetch the order so we can show the wallet
+  // number + a screenshot uploader right here on the confirmation screen.
+  const [manual, setManual] = React.useState<ManualOrder | null>(null);
+  React.useEffect(() => {
+    if (!order) return;
+    const qs = track ? `?token=${encodeURIComponent(track)}` : '';
+    fetch(`/api/orders/${encodeURIComponent(order)}${qs}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { order?: ManualOrder } | null) => {
+        const o = d?.order;
+        if (o && (o.paymentMethod === 'easypaisa' || o.paymentMethod === 'jazzcash')) {
+          setManual(o);
+        }
+      })
+      .catch(() => undefined);
+  }, [order, track]);
 
   // Guests have no dashboard — send them to the token-based tracking page. A
   // logged-in customer still gets their order under /account/orders.
@@ -91,6 +115,14 @@ function SuccessContent() {
     },
   }[state];
 
+  // For an unpaid manual-wallet order, lead with the "complete your payment"
+  // message instead of the generic thank-you.
+  const showManualPanel = manual && manual.paymentStatus !== 'paid';
+  const title = showManualPanel ? 'Almost done — complete your payment' : ui.title;
+  const body = showManualPanel
+    ? 'Your order is reserved. Send the payment and upload your screenshot below so we can verify and dispatch it.'
+    : ui.body;
+
   return (
     <div className="container flex min-h-[60vh] items-center justify-center py-16">
       <Card className="w-full max-w-md text-center">
@@ -98,14 +130,26 @@ function SuccessContent() {
           <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${ui.tone}`}>
             {ui.icon}
           </div>
-          <h1 className="mt-4 font-display text-2xl font-bold">{ui.title}</h1>
-          <p className="mt-2 text-muted-foreground">{ui.body}</p>
+          <h1 className="mt-4 font-display text-2xl font-bold">{title}</h1>
+          <p className="mt-2 text-muted-foreground">{body}</p>
           {order && (
             <div className="mt-4 rounded-lg bg-muted p-3">
               <p className="text-xs text-muted-foreground">Order Number</p>
               <p className="font-mono text-lg font-bold">{order}</p>
             </div>
           )}
+          {manual && order ? (
+            <div className="mt-5">
+              <ManualPaymentPanel
+                orderNumber={order}
+                amount={manual.total}
+                method={manual.paymentMethod}
+                paymentStatus={manual.paymentStatus}
+                initialProofUrl={manual.paymentProofUrl}
+                onUploaded={(url) => setManual((m) => (m ? { ...m, paymentProofUrl: url } : m))}
+              />
+            </div>
+          ) : null}
           <div className="mt-6 flex flex-col gap-2">
             <Button asChild>
               <Link href={trackHref}>

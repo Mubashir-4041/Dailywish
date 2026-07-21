@@ -171,6 +171,9 @@ export const orders = pgTable(
     paymentMethod: text('payment_method').$type<PaymentMethod>().notNull().default('cod'),
     paymentStatus: text('payment_status').$type<PaymentStatus>().notNull().default('pending'),
     paymentRef: text('payment_ref'),
+    // Customer-uploaded proof-of-payment screenshot (Cloudinary URL) for the
+    // manual wallet methods (Easypaisa/JazzCash). Null for COD/card orders.
+    paymentProofUrl: text('payment_proof_url'),
     status: text('status').$type<OrderStatus>().notNull().default('pending'),
     notes: text('notes'),
     statusHistory: jsonb('status_history')

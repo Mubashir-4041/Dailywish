@@ -4,6 +4,11 @@ import { siteConfig } from '@/config/site';
 import { getDb } from '@/lib/db';
 import { settings } from '@/db/schema';
 
+export interface WalletDetails {
+  number: string;
+  accountName: string;
+}
+
 export interface SiteSettings {
   /** Custom announcement-bar text. Empty string → use the default strip. */
   announcement: string;
@@ -14,6 +19,11 @@ export interface SiteSettings {
     tiktok: string;
     youtube: string;
   };
+  /** Wallet numbers customers pay to for the manual checkout methods. */
+  payments: {
+    easypaisa: WalletDetails;
+    jazzcash: WalletDetails;
+  };
 }
 
 function defaults(): SiteSettings {
@@ -21,6 +31,10 @@ function defaults(): SiteSettings {
     announcement: '',
     freeShippingThreshold: siteConfig.shipping.freeThreshold,
     social: { ...siteConfig.social },
+    payments: {
+      easypaisa: { ...siteConfig.payments.easypaisa },
+      jazzcash: { ...siteConfig.payments.jazzcash },
+    },
   };
 }
 
@@ -57,6 +71,16 @@ export async function getSiteSettings(): Promise<SiteSettings> {
         instagram: str(map.instagram, base.social.instagram),
         tiktok: str(map.tiktok, base.social.tiktok),
         youtube: str(map.youtube, base.social.youtube),
+      },
+      payments: {
+        easypaisa: {
+          number: str(map.easypaisaNumber, base.payments.easypaisa.number),
+          accountName: str(map.easypaisaName, base.payments.easypaisa.accountName),
+        },
+        jazzcash: {
+          number: str(map.jazzcashNumber, base.payments.jazzcash.number),
+          accountName: str(map.jazzcashName, base.payments.jazzcash.accountName),
+        },
       },
     };
   } catch {

@@ -89,10 +89,12 @@ export const checkoutSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   items: z.array(cartItemSchema).min(1, 'Your cart is empty'),
   shippingAddress: addressSchema,
-  // PayPal is intentionally omitted — it was a non-functional stub and is
-  // removed from checkout. `PaymentMethod` still includes it so historical
-  // orders keep rendering; new orders can only be COD or Stripe.
-  paymentMethod: z.enum(['cod', 'stripe']),
+  // New orders can be Cash on Delivery or a manual mobile-wallet transfer
+  // (Easypaisa / JazzCash). Stripe card + PayPal are intentionally omitted here
+  // — `PaymentMethod` still includes them so historical orders keep rendering,
+  // but the card UI is disabled (US/USD test-mode only). Re-add 'stripe' to this
+  // enum and un-comment the card step in checkout/page.tsx to bring cards back.
+  paymentMethod: z.enum(['cod', 'easypaisa', 'jazzcash']),
   couponCode: z.string().trim().toUpperCase().optional().or(z.literal('')),
   notes: z.string().trim().max(500).optional().or(z.literal('')),
 });

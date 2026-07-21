@@ -1,4 +1,4 @@
-import { Info } from 'lucide-react';
+import { Info, Lightbulb } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { BadgeProps } from '@/components/ui/badge';
@@ -34,11 +34,43 @@ export function DbNotice({ className }: { className?: string }) {
       )}
     >
       <Info className="mt-0.5 h-4 w-4 shrink-0" />
-      <p>
-        <span className="font-semibold">Demo mode.</span> Showing sample data. Connect{' '}
-        <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[12px]">DATABASE_URL</code>{' '}
-        for live data and to enable saving changes.
-      </p>
+      <div>
+        <p className="font-semibold">The store isn’t connected to its database right now.</p>
+        <p className="mt-1">
+          You’re seeing sample data, and anything you change here won’t save. This almost always
+          means the database setting is missing on the hosting dashboard.
+        </p>
+        <p className="mt-1">
+          <span className="font-medium">What to do:</span> open your Vercel dashboard → your project
+          → Settings → Environment Variables and make sure{' '}
+          <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[12px]">DATABASE_URL</code>{' '}
+          is set, then redeploy. If you’re not sure, send this message to your developer.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A soft, friendly tip callout for guiding a non-technical store owner inline —
+ * "here's how this works / what to do". Keep the copy plain and actionable.
+ */
+export function HelpNote({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'flex items-start gap-3 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-foreground/80',
+        className,
+      )}
+    >
+      <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+      <div className="[&_a]:font-medium [&_a]:text-primary [&_a]:underline">{children}</div>
     </div>
   );
 }

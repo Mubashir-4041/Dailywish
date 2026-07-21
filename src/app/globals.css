@@ -69,6 +69,47 @@
     letter-spacing: -0.015em;
     font-feature-settings: 'ss01' 1, 'liga' 1;
   }
+  /* Warm, gold-tinted text selection — a small brand touch that shows up
+     everywhere text is highlighted. */
+  ::selection {
+    background: hsl(var(--accent) / 0.25);
+    color: hsl(var(--foreground));
+  }
+  /* Always show a clear focus ring for keyboard users (mouse clicks stay clean
+     via :focus-visible). Accessibility floor. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  /* Subtle branded scrollbar so the porcelain background stays cohesive. */
+  * {
+    scrollbar-color: hsl(var(--accent) / 0.4) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--accent) / 0.35);
+    border: 3px solid hsl(var(--background));
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--accent) / 0.55);
+  }
+  /* Respect users who ask for less motion. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer utilities {
@@ -109,5 +150,42 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+  /* Warm, gold-tinted elevation — premium without the cold grey box-shadow
+     default. Pair with hover:shadow-glow-lg on interactive cards. */
+  .shadow-glow {
+    box-shadow:
+      0 1px 2px hsl(24 40% 20% / 0.06),
+      0 8px 24px -12px hsl(37 73% 40% / 0.18);
+  }
+  .shadow-glow-lg {
+    box-shadow:
+      0 2px 6px hsl(24 40% 20% / 0.08),
+      0 20px 45px -18px hsl(37 73% 40% / 0.28);
+  }
+  /* Thin gold hairline used to separate premium sections without a hard border. */
+  .divider-gold {
+    height: 1px;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--accent) / 0.45),
+      transparent
+    );
+  }
+  /* Seamless single-line marquee for the announcement strip. Two identical
+     copies sit side by side; translating the track by -50% loops without a seam.
+     ~24s keeps it calm, not distracting. */
+  .animate-marquee {
+    animation: marquee 24s linear infinite;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }
