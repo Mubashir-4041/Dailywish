@@ -26,7 +26,10 @@ type Wallet = { number: string; accountName: string };
 const PAYMENTS: { value: PaymentMethod; label: string; desc: string; icon: React.ElementType }[] = [
   { value: 'cod', label: 'Cash on Delivery', desc: 'Pay in cash when your order arrives.', icon: Banknote },
   { value: 'easypaisa', label: 'Easypaisa', desc: 'Send payment & upload the screenshot.', icon: Smartphone },
-  { value: 'jazzcash', label: 'JazzCash', desc: 'Send payment & upload the screenshot.', icon: Smartphone },
+  // JazzCash is temporarily hidden from checkout (still fully supported in code —
+  // schema, provider, admin verify, and the wallet setting all remain). To bring
+  // it back, un-comment the line below.
+  // { value: 'jazzcash', label: 'JazzCash', desc: 'Send payment & upload the screenshot.', icon: Smartphone },
 ];
 
 const isManual = (m: PaymentMethod): m is ManualMethod => m === 'easypaisa' || m === 'jazzcash';
