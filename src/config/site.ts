@@ -52,7 +52,7 @@ export const siteConfig = {
   ],
   shipping: {
     freeThreshold: 2500,
-    flatRate: 200,
+    flatRate: 300,
     codFee: 0,
   },
 } as const;
